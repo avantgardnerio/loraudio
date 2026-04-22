@@ -124,16 +124,17 @@ fn main() {
         let mut rx_buf = [0u8; 255];
         let mut line_buf = heapless::String::<64>::new();
 
+        // Show initial RX state
+        display.clear_buffer();
+        Text::new("LORAUDIO", Point::new(30, 12), style)
+            .draw(&mut display)
+            .unwrap();
+        Text::new("RX Listening", Point::new(16, 36), style)
+            .draw(&mut display)
+            .unwrap();
+        display.flush().unwrap();
+
         loop {
-            // Show RX state on OLED
-            display.clear_buffer();
-            Text::new("LORAUDIO", Point::new(30, 12), style)
-                .draw(&mut display)
-                .unwrap();
-            Text::new("RX Listening", Point::new(16, 36), style)
-                .draw(&mut display)
-                .unwrap();
-            display.flush().unwrap();
 
             // Enter continuous RX
             lora.prepare_for_rx(RxMode::Continuous, &mdltn, &rx_params)
