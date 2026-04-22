@@ -332,6 +332,15 @@ dependencies = [
 
 [[package]]
 name = "defmt"
+version = "0.3.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0963443817029b2024136fc4dd07a5107eb8f977eaf18fcd1fdeb11306b64ad"
+dependencies = [
+ "defmt 1.0.1",
+]
+
+[[package]]
+name = "defmt"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "548d977b6da32fa1d1fda2876453da1e7df63ad0304c8b3dae4dbe7b96f39b78"
@@ -571,7 +580,7 @@ version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bfc6d05bac4af70b0795d1f1b6ddd44aa85ad04b05d34d64b1b9fce36de107e"
 dependencies = [
- "defmt",
+ "defmt 1.0.1",
  "embedded-io 0.7.1",
  "embedded-io-async 0.7.0",
  "enumset",
@@ -1064,16 +1073,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
+name = "lora-modulation"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c96c4a41a1f1ad04de765306e1829c7007a37898fe4033204fa82cf2e055624"
+
+[[package]]
+name = "lora-phy"
+version = "3.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61471c3b2909789e3332083577f6cf6c41a4fcf37674ef15156bcbb20504ac65"
+dependencies = [
+ "defmt 0.3.100",
+ "embedded-hal 1.0.0",
+ "embedded-hal-async",
+ "lora-modulation",
+ "num-traits",
+]
+
+[[package]]
 name = "loraudio"
 version = "0.1.0"
 dependencies = [
+ "embassy-futures",
  "embassy-time",
  "embedded-graphics",
  "embuild",
  "esp-idf-svc",
  "log",
+ "lora-phy",
  "ssd1306",
- "sx1262",
 ]
 
 [[package]]
@@ -1346,28 +1375,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
 
 [[package]]
-name = "regiface"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68cb3999c0f452b340f94d960205a0c499b89ddb6d8c8247a95c788fc7378e4e"
-dependencies = [
- "embedded-hal 1.0.0",
- "embedded-hal-async",
- "regiface-macros",
-]
-
-[[package]]
-name = "regiface-macros"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e24cb5b14e574b1f2ab517062181b2ff287c93a56366a87c5f41b99e88aaaa04"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
 name = "remove_dir_all"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1554,18 +1561,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
-]
-
-[[package]]
-name = "sx1262"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a70d7c40f3660b6b9cfbb3021215a856b1e2c757c9ffe35666366328fed39f2"
-dependencies = [
- "bitflags 2.11.1",
- "embedded-hal 1.0.0",
- "embedded-hal-async",
- "regiface",
 ]
 
 [[package]]
