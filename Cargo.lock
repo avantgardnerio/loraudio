@@ -1100,6 +1100,7 @@ dependencies = [
  "embedded-graphics",
  "embuild",
  "esp-idf-svc",
+ "heapless 0.8.0",
  "log",
  "lora-phy",
  "ssd1306",
