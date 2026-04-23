@@ -11,5 +11,9 @@ CONFIG_FREERTOS_IDLE_TASK_STACKSIZE=4096
 # `std::thread::Builder::new().stack_size(XXX)` for spawning
 CONFIG_PTHREAD_TASK_STACK_SIZE_DEFAULT=4096
 
+# Run at full 240MHz for real-time Codec2
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ=240
+
 # Disable SPI ISR in IRAM to enable async SPI trait (embedded_hal_async::spi::SpiDevice)
 # CONFIG_SPI_MASTER_ISR_IN_IRAM is not set
