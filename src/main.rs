@@ -1,9 +1,8 @@
-use embassy_futures::select::{select3, Either3};
+use embassy_futures::select::{select, Either};
 use embedded_graphics::mono_font::ascii::FONT_6X10;
 use embedded_graphics::mono_font::MonoTextStyleBuilder;
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::*;
-use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
 use embedded_graphics::text::Text;
 use esp_idf_svc::hal::adc::continuous::config::Config as AdcContConfig;
 use esp_idf_svc::hal::adc::continuous::{AdcDriver as AdcContDriver, AdcMeasurement, Attenuated};
@@ -157,7 +156,7 @@ fn main() {
             .create_rx_packet_params(8, false, 255, true, false, &mdltn)
             .unwrap();
 
-        // Start continuous ADC (DMA)
+        // Start continuous ADC (DMA) — buffers accumulate, we read them during TX
         adc.start().unwrap();
         log::info!("ADC DMA started at 8kHz");
 
@@ -183,60 +182,57 @@ fn main() {
                 .await
                 .unwrap();
 
-            // Three-way select: RX packet, PTT button, or mic buffer ready
-            match select3(
-                lora.rx(&rx_params, &mut rx_buf),
-                button.wait_for_low(),
-                adc.read_async(&mut mic_buf),
-            )
-            .await
-            {
-                Either3::First(rx_result) => {
-                    // Packet received
-                    match rx_result {
-                        Ok((len, status)) => {
-                            let msg =
-                                core::str::from_utf8(&rx_buf[..len as usize]).unwrap_or("???");
-                            log::info!(
-                                "RX [{}B] rssi={}dBm snr={}dB: {}",
-                                len,
-                                status.rssi,
-                                status.snr,
-                                msg
-                            );
+            // Two-way select: RX packet or PTT button
+            match select(lora.rx(&rx_params, &mut rx_buf), button.wait_for_low()).await {
+                Either::First(rx_result) => match rx_result {
+                    Ok((len, status)) => {
+                        let msg = core::str::from_utf8(&rx_buf[..len as usize]).unwrap_or("???");
+                        log::info!(
+                            "RX [{}B] rssi={}dBm snr={}dB: {}",
+                            len,
+                            status.rssi,
+                            status.snr,
+                            msg
+                        );
 
-                            display.clear_buffer();
-                            Text::new(&mac_str, Point::new(1, 10), style)
-                                .draw(&mut display)
-                                .unwrap();
-                            Text::new(msg, Point::new(0, 32), style)
-                                .draw(&mut display)
-                                .unwrap();
+                        display.clear_buffer();
+                        Text::new(&mac_str, Point::new(1, 10), style)
+                            .draw(&mut display)
+                            .unwrap();
+                        Text::new(msg, Point::new(0, 32), style)
+                            .draw(&mut display)
+                            .unwrap();
 
-                            line_buf.clear();
-                            let _ = core::fmt::write(
-                                &mut line_buf,
-                                format_args!("RSSI:{} SNR:{}", status.rssi, status.snr),
-                            );
-                            Text::new(&line_buf, Point::new(0, 48), style)
-                                .draw(&mut display)
-                                .unwrap();
-                            display.flush().unwrap();
-                        }
-                        Err(e) => {
-                            log::error!("RX error: {:?}", e);
-                        }
+                        line_buf.clear();
+                        let _ = core::fmt::write(
+                            &mut line_buf,
+                            format_args!("RSSI:{} SNR:{}", status.rssi, status.snr),
+                        );
+                        Text::new(&line_buf, Point::new(0, 48), style)
+                            .draw(&mut display)
+                            .unwrap();
+                        display.flush().unwrap();
                     }
-                }
-                Either3::Second(_) => {
+                    Err(e) => {
+                        log::error!("RX error: {:?}", e);
+                    }
+                },
+                Either::Second(_) => {
                     // PTT button pressed — cancel RX, enter TX mode
                     log::info!("PTT pressed — switching to TX");
                     lora.enter_standby().await.unwrap();
 
-                    while button.is_low() {
-                        let msg = format!("LORAUDIO #{}", tx_count);
-                        log::info!("TX: {}", msg);
+                    // Drain any stale mic data
+                    let _ = adc.read(&mut mic_buf, 0);
 
+                    while button.is_low() {
+                        // Wait for a fresh mic frame from DMA
+                        let count = adc.read_async(&mut mic_buf).await.unwrap_or(0);
+
+                        let msg = format!("TX #{} ({}samp)", tx_count, count);
+                        log::info!("{}", msg);
+
+                        // TX the raw text for now (Codec2 next)
                         lora.prepare_for_tx(&mdltn, &mut tx_params, 22, msg.as_bytes())
                             .await
                             .unwrap();
@@ -255,7 +251,6 @@ fn main() {
                         display.flush().unwrap();
 
                         tx_count += 1;
-                        embassy_time::Timer::after_millis(200).await;
                     }
 
                     log::info!("PTT released — back to RX");
@@ -269,35 +264,6 @@ fn main() {
                     Text::new("RX Listening", Point::new(16, 36), style)
                         .draw(&mut display)
                         .unwrap();
-                    display.flush().unwrap();
-                }
-                Either3::Third(adc_result) => {
-                    // Mic buffer ready — cancel RX, update VU, loop back to RX
-                    lora.enter_standby().await.unwrap();
-
-                    let count = adc_result.unwrap_or(0);
-
-                    // Find peak deviation from center (2048 for 12-bit with DC bias)
-                    let mut peak: u16 = 0;
-                    for m in &mic_buf[..count] {
-                        let deviation = (m.data() as i32 - 2048).unsigned_abs() as u16;
-                        if deviation > peak {
-                            peak = deviation;
-                        }
-                    }
-                    let bar_width = ((peak as u32) * 128 / 2048).min(128) as u32;
-
-                    // Draw VU bar at bottom of screen
-                    Rectangle::new(Point::new(0, 56), Size::new(128, 8))
-                        .into_styled(PrimitiveStyle::with_fill(BinaryColor::Off))
-                        .draw(&mut display)
-                        .unwrap();
-                    if bar_width > 0 {
-                        Rectangle::new(Point::new(0, 56), Size::new(bar_width, 8))
-                            .into_styled(PrimitiveStyle::with_fill(BinaryColor::On))
-                            .draw(&mut display)
-                            .unwrap();
-                    }
                     display.flush().unwrap();
                 }
             }
