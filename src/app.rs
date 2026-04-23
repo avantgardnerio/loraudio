@@ -1,3 +1,4 @@
+use codec2::{Codec2, Codec2Mode};
 use embassy_futures::select::{select, Either};
 use embedded_graphics::mono_font::ascii::FONT_6X10;
 use embedded_graphics::mono_font::MonoTextStyleBuilder;
@@ -17,9 +18,18 @@ use ssd1306::prelude::*;
 use ssd1306::{I2CDisplayInterface, Ssd1306};
 use std::future::Future;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::{TxRequest, RX_CHAN, TX_CHAN};
+
+/// Codec2 MODE_1200: 320 samples → 6 bytes per frame
+const CODEC2_FRAME_BYTES: usize = 6;
+const CODEC2_FRAME_SAMPLES: usize = 320;
+
+/// Convert 12-bit unsigned ADC sample to signed 16-bit PCM centered at 0.
+fn adc_to_pcm(sample: &AdcMeasurement) -> i16 {
+    (sample.data() as i16 - 2048) * 16
+}
 
 type Display<'a> = Ssd1306<
     I2CInterface<I2cDriver<'a>>,
@@ -67,6 +77,13 @@ pub async fn init(p: Peripherals, mac_str: heapless::String<18>) -> impl Future<
     display.set_brightness(Brightness::BRIGHTEST).unwrap();
     log::info!("OLED initialized, MAC: {}", mac_str);
 
+    // Codec2 encoder + decoder (MODE_1200: 320 samples → 6 bytes)
+    // Box to avoid bloating the async future's stack frame
+    let encoder = Box::new(Codec2::new(Codec2Mode::MODE_1200));
+    log::info!("Codec2 encoder initialized");
+    let decoder = Box::new(Codec2::new(Codec2Mode::MODE_1200));
+    log::info!("Codec2 decoder initialized ({}B/frame)", CODEC2_FRAME_BYTES);
+
     // Start continuous ADC (DMA)
     adc.start().unwrap();
     log::info!("ADC DMA started at 8kHz");
@@ -74,7 +91,7 @@ pub async fn init(p: Peripherals, mac_str: heapless::String<18>) -> impl Future<
     async move {
         // Keep oled_rst alive so the pin doesn't float low (holding OLED in reset)
         let _oled_rst = oled_rst;
-        app_loop(button, adc, display, &mac_str).await;
+        app_loop(button, adc, display, &mac_str, encoder, decoder).await;
     }
 }
 
@@ -83,6 +100,8 @@ async fn app_loop(
     mut adc: AdcContDriver<'_>,
     mut display: Display<'_>,
     mac_str: &str,
+    mut encoder: Box<Codec2>,
+    mut decoder: Box<Codec2>,
 ) {
     let style = MonoTextStyleBuilder::new()
         .font(&FONT_6X10)
@@ -92,6 +111,8 @@ async fn app_loop(
     let mut tx_count: u32 = 0;
     let mut line_buf = heapless::String::<64>::new();
     let mut mic_buf = [AdcMeasurement::new(); 320];
+    let mut pcm_buf = [0i16; CODEC2_FRAME_SAMPLES];
+    let mut codec_buf = [0u8; CODEC2_FRAME_BYTES];
 
     // Show initial RX state
     draw_rx_screen(&mut display, mac_str, &style);
@@ -99,32 +120,49 @@ async fn app_loop(
     loop {
         match select(RX_CHAN.receive(), button.wait_for_low()).await {
             Either::First(rx_pkt) => {
-                let msg = core::str::from_utf8(&rx_pkt.data).unwrap_or("???");
-                log::info!(
-                    "RX [{}B] rssi={}dBm snr={}dB: {}",
-                    rx_pkt.data.len(),
-                    rx_pkt.rssi,
-                    rx_pkt.snr,
-                    msg
-                );
+                if rx_pkt.data.len() == CODEC2_FRAME_BYTES {
+                    // Decode Codec2 voice frame
+                    let t0 = Instant::now();
+                    let mut decode_out = [0i16; CODEC2_FRAME_SAMPLES];
+                    decoder.decode(&mut decode_out, &rx_pkt.data);
+                    let decode_ms = t0.elapsed().as_millis();
 
-                display.clear_buffer();
-                Text::new(mac_str, Point::new(1, 10), style)
-                    .draw(&mut display)
-                    .unwrap();
-                Text::new(msg, Point::new(0, 32), style)
-                    .draw(&mut display)
-                    .unwrap();
+                    // Compute peak amplitude for stats
+                    let peak = decode_out.iter().map(|s| s.unsigned_abs()).max().unwrap_or(0);
+                    log::info!(
+                        "RX Audio [{}B] rssi={}dBm snr={}dB decode={}ms peak={}",
+                        rx_pkt.data.len(),
+                        rx_pkt.rssi,
+                        rx_pkt.snr,
+                        decode_ms,
+                        peak
+                    );
 
-                line_buf.clear();
-                let _ = core::fmt::write(
-                    &mut line_buf,
-                    format_args!("RSSI:{} SNR:{}", rx_pkt.rssi, rx_pkt.snr),
-                );
-                Text::new(&line_buf, Point::new(0, 48), style)
-                    .draw(&mut display)
-                    .unwrap();
-                display.flush().unwrap();
+                    display.clear_buffer();
+                    Text::new(mac_str, Point::new(1, 10), style)
+                        .draw(&mut display)
+                        .unwrap();
+                    Text::new("RX Audio", Point::new(28, 32), style)
+                        .draw(&mut display)
+                        .unwrap();
+
+                    line_buf.clear();
+                    let _ = core::fmt::write(
+                        &mut line_buf,
+                        format_args!("RSSI:{} SNR:{}", rx_pkt.rssi, rx_pkt.snr),
+                    );
+                    Text::new(&line_buf, Point::new(0, 48), style)
+                        .draw(&mut display)
+                        .unwrap();
+                    display.flush().unwrap();
+                } else {
+                    log::warn!(
+                        "RX non-voice [{}B] rssi={}dBm snr={}dB",
+                        rx_pkt.data.len(),
+                        rx_pkt.rssi,
+                        rx_pkt.snr
+                    );
+                }
             }
             Either::Second(_) => {
                 // PTT button pressed — enter TX mode
@@ -137,12 +175,30 @@ async fn app_loop(
                     // Wait for a fresh mic frame from DMA
                     let count = adc.read_async(&mut mic_buf).await.unwrap_or(0);
 
-                    let msg = format!("TX #{} ({}samp)", tx_count, count);
-                    log::info!("{}", msg);
+                    // Convert ADC samples to PCM
+                    for (i, sample) in mic_buf[..count].iter().enumerate() {
+                        pcm_buf[i] = adc_to_pcm(sample);
+                    }
+                    // Zero-pad if short
+                    for s in pcm_buf[count..].iter_mut() {
+                        *s = 0;
+                    }
 
-                    // Send TX request to radio task
+                    // Encode with Codec2
+                    let t0 = Instant::now();
+                    encoder.encode(&mut codec_buf, &pcm_buf);
+                    let encode_ms = t0.elapsed().as_millis();
+
+                    log::info!(
+                        "TX #{} ({}samp) encode={}ms",
+                        tx_count,
+                        count,
+                        encode_ms
+                    );
+
+                    // Send encoded frame to radio task
                     let mut data = heapless::Vec::new();
-                    let _ = data.extend_from_slice(msg.as_bytes());
+                    let _ = data.extend_from_slice(&codec_buf);
                     TX_CHAN.send(TxRequest { data }).await;
 
                     // Update display
