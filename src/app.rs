@@ -33,11 +33,16 @@ use crate::{TxRequest, CHAN_USE_PCT, RX_CHAN, TX_CHAN};
 const CODEC2_FRAME_BYTES: usize = 6;
 const CODEC2_FRAME_SAMPLES: usize = 320;
 
-/// Pack 4 Codec2 frames per LoRa packet (24 bytes, 160ms audio).
-/// At SF8/125kHz a 6-byte packet takes ~61ms (>40ms audio = broken),
-/// but 24 bytes takes ~113ms for 160ms audio = 47ms of slack.
+/// Pack 4 Codec2 frames per LoRa packet (24 bytes payload, 160ms audio).
+/// 2-byte header for repeater dedup/reorder: |5b type|7b txid|4b seq| = 16 bits.
+/// 26 bytes total sits in the same SF8 symbol bin as 24 — zero air time cost.
 const FRAMES_PER_PACKET: usize = 4;
-const PACKET_BYTES: usize = CODEC2_FRAME_BYTES * FRAMES_PER_PACKET; // 24
+const HEADER_BYTES: usize = 2;
+const PAYLOAD_BYTES: usize = CODEC2_FRAME_BYTES * FRAMES_PER_PACKET; // 24
+const PACKET_BYTES: usize = HEADER_BYTES + PAYLOAD_BYTES; // 26
+
+/// Packet type constants (5 bits, upper bits of header)
+const PKT_TYPE_VOICE: u8 = 0x00;
 
 /// Jitter buffer: accumulate this many decoded frames before starting I2S playback.
 /// 4 frames × 40ms = 160ms (one packet's worth of lead time).
@@ -180,11 +185,17 @@ async fn app_loop(
         match select(RX_CHAN.receive(), button.wait_for_low()).await {
             Either::First(rx_pkt) => {
                 if rx_pkt.data.len() == PACKET_BYTES {
+                    // Parse 2-byte header: |5b type|7b txid|4b seq|
+                    let header = u16::from_be_bytes([rx_pkt.data[0], rx_pkt.data[1]]);
+                    let _pkt_type = (header >> 11) as u8;
+                    let txid = ((header >> 4) & 0x7F) as u8;
+                    let seq = (header & 0x0F) as u8;
+                    let payload = &rx_pkt.data[HEADER_BYTES..];
+
                     // Unpack and decode all frames in this packet
                     let t0 = Instant::now();
                     for i in 0..FRAMES_PER_PACKET {
-                        let coded =
-                            &rx_pkt.data[i * CODEC2_FRAME_BYTES..(i + 1) * CODEC2_FRAME_BYTES];
+                        let coded = &payload[i * CODEC2_FRAME_BYTES..(i + 1) * CODEC2_FRAME_BYTES];
                         decoder.decode(&mut decode_buf, coded);
 
                         // Interleave mono→stereo into a new heap buffer
@@ -214,8 +225,10 @@ async fn app_loop(
                     }
 
                     log::info!(
-                        "RX [{}B] rssi={} snr={} dec={}ms jbuf={}",
+                        "RX [{}B] txid={} seq={} rssi={} snr={} dec={}ms jbuf={}",
                         rx_pkt.data.len(),
+                        txid,
+                        seq,
                         rx_pkt.rssi,
                         rx_pkt.snr,
                         decode_ms,
@@ -257,9 +270,13 @@ async fn app_loop(
             }
             Either::Second(_) => {
                 // PTT pressed — stream: read+encode 4 frames, send packet, repeat
-                log::info!("PTT pressed — streaming");
                 jitter_buf.clear();
                 jitter_playing = false;
+
+                // Generate random 7-bit txid for this PTT press (dedup key)
+                let txid = (unsafe { esp_idf_svc::sys::esp_random() } & 0x7F) as u8;
+                let mut seq: u8 = 0;
+                log::info!("PTT pressed — streaming (txid={})", txid);
 
                 display.clear_buffer();
                 Text::new(mac_str, Point::new(1, 10), style)
@@ -274,8 +291,14 @@ async fn app_loop(
 
                 let mut pkt_buf = [0u8; PACKET_BYTES];
                 while button.is_low() {
-                    // Read and encode FRAMES_PER_PACKET frames (interleaved)
-                    // ADC DMA buffers next frame while we encode current one
+                    // Pack 2-byte header: |5b type|7b txid|4b seq|
+                    let header: u16 =
+                        (PKT_TYPE_VOICE as u16) << 11 | (txid as u16) << 4 | seq as u16;
+                    let [h0, h1] = header.to_be_bytes();
+                    pkt_buf[0] = h0;
+                    pkt_buf[1] = h1;
+
+                    // Read and encode FRAMES_PER_PACKET frames into payload area
                     for i in 0..FRAMES_PER_PACKET {
                         let count = adc.read_async(&mut mic_buf).await.unwrap_or(0);
                         for (j, sample) in mic_buf[..count].iter().enumerate() {
@@ -284,17 +307,16 @@ async fn app_loop(
                         for s in pcm_buf[count..].iter_mut() {
                             *s = 0;
                         }
-                        encoder.encode(
-                            &mut pkt_buf[i * CODEC2_FRAME_BYTES..(i + 1) * CODEC2_FRAME_BYTES],
-                            &pcm_buf,
-                        );
+                        let offset = HEADER_BYTES + i * CODEC2_FRAME_BYTES;
+                        encoder.encode(&mut pkt_buf[offset..offset + CODEC2_FRAME_BYTES], &pcm_buf);
                     }
 
-                    // Send 4-frame packet to radio
+                    // Send 26-byte packet (2B header + 24B voice) to radio
                     let mut data = heapless::Vec::new();
                     let _ = data.extend_from_slice(&pkt_buf);
                     TX_CHAN.send(TxRequest { data }).await;
                     tx_count += 1;
+                    seq = (seq + 1) & 0x0F; // wrap at 16
                 }
 
                 log::info!("PTT released — {} packets sent", tx_count);
