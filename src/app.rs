@@ -173,6 +173,7 @@ async fn app_loop(
     // Track current transmitter for seq ordering
     let mut cur_txid: Option<u8> = None;
     let mut last_played_seq: u8 = 0;
+    let mut seq_buf: [Option<Box<[u8]>>; 16] = Default::default();
 
     // Show initial RX state
     draw_rx_screen(&mut display, mac_str, &style, &mut line_buf);
@@ -203,7 +204,11 @@ async fn app_loop(
                 }
 
                 if cur_txid != Some(txid) {
-                    log::warn!("RX ignoring txid={} (locked to {})", txid, cur_txid.unwrap());
+                    log::warn!(
+                        "RX ignoring txid={} (locked to {})",
+                        txid,
+                        cur_txid.unwrap()
+                    );
                     continue;
                 }
 
@@ -213,7 +218,11 @@ async fn app_loop(
 
                 match diff {
                     -8..=-4 => {
-                        log::warn!("RX seq={} unrealistically old (diff={}), resetting", seq, diff);
+                        log::warn!(
+                            "RX seq={} unrealistically old (diff={}), resetting",
+                            seq,
+                            diff
+                        );
                         cur_txid = None;
                         continue;
                     }
@@ -221,33 +230,46 @@ async fn app_loop(
                         log::info!("RX seq={} old (diff={}), dropping", seq, diff);
                         continue;
                     }
-                    0 => {} // on time, play below
-                    1..=3 => {
-                        // TODO: queue for reorder
-                        log::info!("RX seq={} ahead (diff={}), playing anyway for now", seq, diff);
+                    0..=3 => {
+                        seq_buf[seq as usize] = Some(payload.to_vec().into_boxed_slice());
                     }
                     _ => {
                         // 4..=7
-                        log::warn!("RX seq={} unrealistically new (diff={}), resetting", seq, diff);
+                        log::warn!(
+                            "RX seq={} unrealistically new (diff={}), resetting",
+                            seq,
+                            diff
+                        );
                         cur_txid = None;
                         continue;
                     }
                 }
 
-                let decode_ms = decode_and_play(payload, &mut decoder, &mut decode_buf, &mut i2s_tx);
-                last_played_seq = seq;
+                let mut play_seq = (last_played_seq.wrapping_add(1)) & 0x0F;
+                while let Some(buffered) = seq_buf[play_seq as usize].take() {
+                    decode_and_play(&buffered, &mut decoder, &mut decode_buf, &mut i2s_tx);
+                    last_played_seq = play_seq;
+                    play_seq = (play_seq.wrapping_add(1)) & 0x0F;
+                }
 
                 log::info!(
-                    "RX [{}B] txid={} seq={} rssi={} snr={} dec={}ms",
+                    "RX [{}B] txid={} seq={} played_to={} rssi={} snr={}",
                     rx_pkt.data.len(),
                     txid,
                     seq,
+                    last_played_seq,
                     rx_pkt.rssi,
                     rx_pkt.snr,
-                    decode_ms,
                 );
 
-                draw_rx_audio_screen(&mut display, mac_str, &style, &mut line_buf, rx_pkt.rssi, rx_pkt.snr);
+                draw_rx_audio_screen(
+                    &mut display,
+                    mac_str,
+                    &style,
+                    &mut line_buf,
+                    rx_pkt.rssi,
+                    rx_pkt.snr,
+                );
             }
             Either::Second(_) => {
                 // PTT pressed — stream: read+encode 4 frames, send packet, repeat
