@@ -229,21 +229,44 @@ async fn radio_loop(
                 // RX continuous keeps running — no re-setup needed
             }
             Either::Second(tx_req) => {
-                if let Some(t) = busy_since {
-                    if t.elapsed().as_millis() < 200 {
-                        log::info!("TX waiting: channel busy");
-                        // Wait for current RX to finish before TX
-                        loop {
-                            lora.wait_for_irq().await.unwrap();
-                            let state = lora.get_irq_state().await;
-                            lora.clear_irq_status().await.unwrap();
-                            match state {
-                                Ok(Some(IrqState::PreambleReceived)) => continue,
-                                _ => break,
+                // CSMA: wait for channel clear, then random jitter while listening
+                loop {
+                    // If channel busy, wait for in-progress RX to finish
+                    if let Some(t) = busy_since {
+                        if t.elapsed().as_millis() < 200 {
+                            log::info!("TX waiting: channel busy");
+                            loop {
+                                lora.wait_for_irq().await.unwrap();
+                                let state = lora.get_irq_state().await;
+                                lora.clear_irq_status().await.unwrap();
+                                match state {
+                                    Ok(Some(IrqState::PreambleReceived)) => continue,
+                                    _ => break,
+                                }
                             }
                         }
+                        busy_since = None;
                     }
-                    busy_since = None;
+
+                    // Random jitter — listen during wait to detect new transmissions
+                    let jitter_ms = (unsafe { esp_idf_svc::sys::esp_random() } % 20) as u64;
+                    match select(
+                        lora.wait_for_irq(),
+                        embassy_time::Timer::after_millis(jitter_ms),
+                    )
+                    .await
+                    {
+                        Either::First(_) => {
+                            // Someone started TX during our jitter — handle and retry
+                            if let Ok(Some(IrqState::PreambleReceived)) = lora.get_irq_state().await
+                            {
+                                busy_since = Some(Instant::now());
+                            }
+                            lora.clear_irq_status().await.unwrap();
+                            continue;
+                        }
+                        Either::Second(_) => break, // Channel stayed clear, TX now
+                    }
                 }
 
                 lora.enter_standby().await.unwrap();
