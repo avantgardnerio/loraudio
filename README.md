@@ -84,10 +84,11 @@ picocom /dev/ttyACM0 -b 115200
 
 ## Current Behavior
 
-- Boots into **RX mode** — OLED displays "RX Listening"
-- Hold **PRG button** (GPIO 0) to transmit — sends "LORAUDIO #N" packets every 200ms
-- Release button to return to RX
-- Received packets display on OLED with RSSI and SNR
+- Simplex push-to-talk voice radio over LoRa
+- Hold **PRG button** (GPIO 0) to talk — audio is captured, Codec2-encoded at 1200 bps, and streamed as 4-frame LoRa packets (160ms audio each)
+- Release to listen — received audio is decoded and played through I2S speaker (MAX98357A)
+- OLED shows mode (RX Listening / TX Streaming / RX Audio) with RSSI and SNR on receive
+- **Next up**: repeater mesh with CSMA/CAD flood relay
 
 ## Key Implementation Notes
 
