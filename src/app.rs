@@ -223,7 +223,7 @@ async fn app_loop(
                             seq,
                             diff
                         );
-                        cur_txid = None;
+                        reset_rx_state(&mut cur_txid, &mut last_played_seq, &mut seq_buf);
                         continue;
                     }
                     -3..=-1 => {
@@ -240,7 +240,7 @@ async fn app_loop(
                             seq,
                             diff
                         );
-                        cur_txid = None;
+                        reset_rx_state(&mut cur_txid, &mut last_played_seq, &mut seq_buf);
                         continue;
                     }
                 }
@@ -273,6 +273,7 @@ async fn app_loop(
             }
             Either::Second(_) => {
                 // PTT pressed — stream: read+encode 4 frames, send packet, repeat
+                reset_rx_state(&mut cur_txid, &mut last_played_seq, &mut seq_buf);
                 // Generate random 7-bit txid for this PTT press (dedup key)
                 let txid = (unsafe { esp_idf_svc::sys::esp_random() } & 0x7F) as u8;
                 let mut seq: u8 = 0;
@@ -326,6 +327,16 @@ async fn app_loop(
             }
         }
     }
+}
+
+fn reset_rx_state(
+    cur_txid: &mut Option<u8>,
+    last_played_seq: &mut u8,
+    seq_buf: &mut [Option<Box<[u8]>>; 16],
+) {
+    *cur_txid = None;
+    *last_played_seq = 0;
+    seq_buf.iter_mut().for_each(|s| *s = None);
 }
 
 fn decode_and_play(
