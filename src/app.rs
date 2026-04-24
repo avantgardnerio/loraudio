@@ -165,7 +165,6 @@ async fn app_loop(
     // Heap-allocate audio buffers — keeps async future small, ready for codec thread
     let mut mic_buf = vec![AdcMeasurement::new(); 320].into_boxed_slice();
     let mut pcm_buf = vec![0i16; CODEC2_FRAME_SAMPLES].into_boxed_slice();
-    let mut codec_buf = vec![0u8; CODEC2_FRAME_BYTES].into_boxed_slice();
     let mut decode_buf = vec![0i16; CODEC2_FRAME_SAMPLES].into_boxed_slice();
 
     // Jitter buffer: ring of stereo frames, written to I2S once we have enough lead time
@@ -182,13 +181,12 @@ async fn app_loop(
                     // Unpack and decode all frames in this packet
                     let t0 = Instant::now();
                     for i in 0..FRAMES_PER_PACKET {
-                        let coded = &rx_pkt.data
-                            [i * CODEC2_FRAME_BYTES..(i + 1) * CODEC2_FRAME_BYTES];
+                        let coded =
+                            &rx_pkt.data[i * CODEC2_FRAME_BYTES..(i + 1) * CODEC2_FRAME_BYTES];
                         decoder.decode(&mut decode_buf, coded);
 
                         // Interleave mono→stereo into a new heap buffer
-                        let mut frame =
-                            vec![0i16; CODEC2_FRAME_SAMPLES * 2].into_boxed_slice();
+                        let mut frame = vec![0i16; CODEC2_FRAME_SAMPLES * 2].into_boxed_slice();
                         for (j, &sample) in decode_buf.iter().enumerate() {
                             frame[j * 2] = sample;
                             frame[j * 2 + 1] = sample;
@@ -208,10 +206,7 @@ async fn app_loop(
                     if jitter_playing {
                         for f in jitter_buf.drain(..) {
                             i2s_tx
-                                .write_all(
-                                    pcm_as_bytes(&f),
-                                    esp_idf_svc::hal::delay::BLOCK,
-                                )
+                                .write_all(pcm_as_bytes(&f), esp_idf_svc::hal::delay::BLOCK)
                                 .unwrap();
                         }
                     }
@@ -281,8 +276,7 @@ async fn app_loop(
                             *s = 0;
                         }
                         encoder.encode(
-                            &mut pkt_buf
-                                [i * CODEC2_FRAME_BYTES..(i + 1) * CODEC2_FRAME_BYTES],
+                            &mut pkt_buf[i * CODEC2_FRAME_BYTES..(i + 1) * CODEC2_FRAME_BYTES],
                             &pcm_buf,
                         );
                     }
