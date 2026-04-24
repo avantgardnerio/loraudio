@@ -199,11 +199,40 @@ async fn app_loop(
 
                 if cur_txid.is_none() {
                     cur_txid = Some(txid);
+                    last_played_seq = seq.wrapping_sub(1) & 0x0F;
+                }
+
+                if cur_txid != Some(txid) {
+                    log::warn!("RX ignoring txid={} (locked to {})", txid, cur_txid.unwrap());
+                    continue;
                 }
 
                 let expected_seq = (last_played_seq.wrapping_add(1)) & 0x0F;
                 let diff = (seq.wrapping_sub(expected_seq) & 0x0F) as i8;
                 let diff = if diff > 7 { diff - 16 } else { diff };
+
+                match diff {
+                    -8..=-4 => {
+                        log::warn!("RX seq={} unrealistically old (diff={}), resetting", seq, diff);
+                        cur_txid = None;
+                        continue;
+                    }
+                    -3..=-1 => {
+                        log::info!("RX seq={} old (diff={}), dropping", seq, diff);
+                        continue;
+                    }
+                    0 => {} // on time, play below
+                    1..=3 => {
+                        // TODO: queue for reorder
+                        log::info!("RX seq={} ahead (diff={}), playing anyway for now", seq, diff);
+                    }
+                    _ => {
+                        // 4..=7
+                        log::warn!("RX seq={} unrealistically new (diff={}), resetting", seq, diff);
+                        cur_txid = None;
+                        continue;
+                    }
+                }
 
                 let decode_ms = decode_and_play(payload, &mut decoder, &mut decode_buf, &mut i2s_tx);
                 last_played_seq = seq;
