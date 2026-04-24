@@ -1,6 +1,6 @@
-# Loraudio
+# open-oswst
 
-Voice over LoRa with repeaters.
+Stealth LoRa radio mesh where the primary design principle is "only speak when spoken to".
 
 ## Hardware
 
