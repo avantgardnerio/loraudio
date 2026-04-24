@@ -12,6 +12,11 @@ use esp_idf_svc::hal::gpio::{AnyIOPin, Gpio7};
 use esp_idf_svc::hal::gpio::{Input, PinDriver, Pull};
 use esp_idf_svc::hal::i2c::config::Config as I2cConfig;
 use esp_idf_svc::hal::i2c::{I2cDriver, I2C0};
+use esp_idf_svc::hal::i2s::config::{
+    Config as I2sChannelConfig, DataBitWidth, SlotMode, StdClkConfig, StdConfig, StdGpioConfig,
+    StdSlotConfig,
+};
+use esp_idf_svc::hal::i2s::{I2sDriver, I2sTx, I2S0};
 use esp_idf_svc::hal::units::Hertz;
 use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::prelude::*;
@@ -25,6 +30,11 @@ use crate::{TxRequest, RX_CHAN, TX_CHAN};
 /// Codec2 MODE_1200: 320 samples → 6 bytes per frame
 const CODEC2_FRAME_BYTES: usize = 6;
 const CODEC2_FRAME_SAMPLES: usize = 320;
+
+/// Convert i16 PCM slice to &[u8] for I2S write.
+fn pcm_as_bytes(pcm: &[i16]) -> &[u8] {
+    unsafe { core::slice::from_raw_parts(pcm.as_ptr() as *const u8, pcm.len() * 2) }
+}
 
 /// Convert 12-bit unsigned ADC sample to signed 16-bit PCM centered at 0.
 fn adc_to_pcm(sample: &AdcMeasurement) -> i16 {
@@ -45,6 +55,10 @@ pub struct Peripherals {
     pub oled_sda: AnyIOPin<'static>,
     pub oled_scl: AnyIOPin<'static>,
     pub oled_rst: AnyIOPin<'static>,
+    pub i2s: I2S0<'static>,
+    pub spk_bclk: AnyIOPin<'static>,
+    pub spk_din: AnyIOPin<'static>,
+    pub spk_ws: AnyIOPin<'static>,
 }
 
 pub async fn init(p: Peripherals, mac_str: heapless::String<18>) -> impl Future<Output = ()> {
@@ -77,6 +91,30 @@ pub async fn init(p: Peripherals, mac_str: heapless::String<18>) -> impl Future<
     display.set_brightness(Brightness::BRIGHTEST).unwrap();
     log::info!("OLED initialized, MAC: {}", mac_str);
 
+    // I2S TX for speaker (MAX98357A, Philips format, 8kHz mono 16-bit)
+    // Larger DMA buffers + auto_clear to avoid underrun clicks
+    let i2s_chan_cfg = I2sChannelConfig::new()
+        .dma_buffer_count(8)
+        .frames_per_buffer(320) // 40ms per buffer = one Codec2 frame
+        .auto_clear(true);
+    let std_config = StdConfig::new(
+        i2s_chan_cfg,
+        StdClkConfig::from_sample_rate_hz(8000),
+        StdSlotConfig::philips_slot_default(DataBitWidth::Bits16, SlotMode::Stereo),
+        StdGpioConfig::default(),
+    );
+    let mut i2s_tx = I2sDriver::<I2sTx>::new_std_tx(
+        p.i2s,
+        &std_config,
+        p.spk_bclk,
+        p.spk_din,
+        None::<AnyIOPin>,
+        p.spk_ws,
+    )
+    .unwrap();
+    // Don't tx_enable yet — Codec2 init blocks for seconds and would starve DMA
+    log::info!("I2S TX configured (8kHz mono 16-bit Philips)");
+
     // Codec2 encoder + decoder (MODE_1200: 320 samples → 6 bytes)
     // Box to avoid bloating the async future's stack frame
     let encoder = Box::new(Codec2::new(Codec2Mode::MODE_1200));
@@ -91,13 +129,17 @@ pub async fn init(p: Peripherals, mac_str: heapless::String<18>) -> impl Future<
     async move {
         // Keep oled_rst alive so the pin doesn't float low (holding OLED in reset)
         let _oled_rst = oled_rst;
-        app_loop(button, adc, display, &mac_str, encoder, decoder).await;
+        // Enable I2S TX now — after Codec2 init so DMA doesn't starve
+        i2s_tx.tx_enable().unwrap();
+        log::info!("I2S TX enabled");
+        app_loop(button, adc, i2s_tx, display, &mac_str, encoder, decoder).await;
     }
 }
 
 async fn app_loop(
     mut button: PinDriver<'_, Input>,
     mut adc: AdcContDriver<'_>,
+    mut i2s_tx: I2sDriver<'_, I2sTx>,
     mut display: Display<'_>,
     mac_str: &str,
     mut encoder: Box<Codec2>,
@@ -110,9 +152,12 @@ async fn app_loop(
 
     let mut tx_count: u32 = 0;
     let mut line_buf = heapless::String::<64>::new();
-    let mut mic_buf = [AdcMeasurement::new(); 320];
-    let mut pcm_buf = [0i16; CODEC2_FRAME_SAMPLES];
-    let mut codec_buf = [0u8; CODEC2_FRAME_BYTES];
+    // Heap-allocate audio buffers — keeps async future small, ready for codec thread
+    let mut mic_buf = vec![AdcMeasurement::new(); 320].into_boxed_slice();
+    let mut pcm_buf = vec![0i16; CODEC2_FRAME_SAMPLES].into_boxed_slice();
+    let mut codec_buf = vec![0u8; CODEC2_FRAME_BYTES].into_boxed_slice();
+    let mut stereo_buf = vec![0i16; CODEC2_FRAME_SAMPLES * 2].into_boxed_slice();
+    let mut decode_buf = vec![0i16; CODEC2_FRAME_SAMPLES].into_boxed_slice();
 
     // Show initial RX state
     draw_rx_screen(&mut display, mac_str, &style);
@@ -123,12 +168,23 @@ async fn app_loop(
                 if rx_pkt.data.len() == CODEC2_FRAME_BYTES {
                     // Decode Codec2 voice frame
                     let t0 = Instant::now();
-                    let mut decode_out = [0i16; CODEC2_FRAME_SAMPLES];
-                    decoder.decode(&mut decode_out, &rx_pkt.data);
+                    decoder.decode(&mut decode_buf, &rx_pkt.data);
                     let decode_ms = t0.elapsed().as_millis();
 
+                    // Interleave mono→stereo and write to speaker
+                    for (i, &sample) in decode_buf.iter().enumerate() {
+                        stereo_buf[i * 2] = sample;
+                        stereo_buf[i * 2 + 1] = sample;
+                    }
+                    i2s_tx
+                        .write_all(
+                            pcm_as_bytes(&stereo_buf),
+                            esp_idf_svc::hal::delay::BLOCK,
+                        )
+                        .unwrap();
+
                     // Compute peak amplitude for stats
-                    let peak = decode_out.iter().map(|s| s.unsigned_abs()).max().unwrap_or(0);
+                    let peak = decode_buf.iter().map(|s| s.unsigned_abs()).max().unwrap_or(0);
                     log::info!(
                         "RX Audio [{}B] rssi={}dBm snr={}dB decode={}ms peak={}",
                         rx_pkt.data.len(),
@@ -165,7 +221,7 @@ async fn app_loop(
                 }
             }
             Either::Second(_) => {
-                // PTT button pressed — enter TX mode
+                // PTT button pressed — enter TX mode (sine stops automatically)
                 log::info!("PTT pressed — switching to TX");
 
                 // Drain any stale mic data

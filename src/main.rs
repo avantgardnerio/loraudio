@@ -84,6 +84,10 @@ fn main() {
                 oled_sda: peripherals.pins.gpio17.into(),
                 oled_scl: peripherals.pins.gpio18.into(),
                 oled_rst: peripherals.pins.gpio21.into(),
+                i2s: peripherals.i2s0,
+                spk_bclk: peripherals.pins.gpio3.into(),
+                spk_din: peripherals.pins.gpio5.into(),
+                spk_ws: peripherals.pins.gpio4.into(),
             },
             mac_str,
         )
