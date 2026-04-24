@@ -7,6 +7,7 @@ use embassy_sync::channel::Channel;
 use esp_idf_svc::hal::gpio::PinDriver;
 use esp_idf_svc::hal::peripherals::Peripherals;
 use esp_idf_svc::hal::task::block_on;
+use std::sync::atomic::AtomicU8;
 use std::thread;
 use std::time::Duration;
 
@@ -26,6 +27,9 @@ pub(crate) struct TxRequest {
 
 pub(crate) static RX_CHAN: Channel<CriticalSectionRawMutex, RxPacket, 2> = Channel::new();
 pub(crate) static TX_CHAN: Channel<CriticalSectionRawMutex, TxRequest, 4> = Channel::new();
+
+/// Channel occupancy percentage (0-100), written by radio task, read by app task.
+pub(crate) static CHAN_USE_PCT: AtomicU8 = AtomicU8::new(0);
 
 /// Read the base MAC address from eFuse
 fn get_mac() -> [u8; 6] {

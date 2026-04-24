@@ -25,7 +25,9 @@ use std::future::Future;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::{TxRequest, RX_CHAN, TX_CHAN};
+use std::sync::atomic::Ordering;
+
+use crate::{TxRequest, CHAN_USE_PCT, RX_CHAN, TX_CHAN};
 
 /// Codec2 MODE_1200: 320 samples → 6 bytes per frame
 const CODEC2_FRAME_BYTES: usize = 6;
@@ -172,7 +174,7 @@ async fn app_loop(
     let mut jitter_playing = false;
 
     // Show initial RX state
-    draw_rx_screen(&mut display, mac_str, &style);
+    draw_rx_screen(&mut display, mac_str, &style, &mut line_buf);
 
     loop {
         match select(RX_CHAN.receive(), button.wait_for_low()).await {
@@ -236,6 +238,13 @@ async fn app_loop(
                     Text::new(&line_buf, Point::new(0, 48), style)
                         .draw(&mut display)
                         .unwrap();
+
+                    let pct = CHAN_USE_PCT.load(Ordering::Relaxed);
+                    line_buf.clear();
+                    let _ = core::fmt::write(&mut line_buf, format_args!("CH:{}%", pct));
+                    Text::new(&line_buf, Point::new(0, 60), style)
+                        .draw(&mut display)
+                        .unwrap();
                     display.flush().unwrap();
                 } else {
                     log::warn!(
@@ -291,7 +300,7 @@ async fn app_loop(
                 log::info!("PTT released — {} packets sent", tx_count);
 
                 // Redraw RX screen
-                draw_rx_screen(&mut display, mac_str, &style);
+                draw_rx_screen(&mut display, mac_str, &style, &mut line_buf);
             }
         }
     }
@@ -301,12 +310,19 @@ fn draw_rx_screen(
     display: &mut Display<'_>,
     mac_str: &str,
     style: &embedded_graphics::mono_font::MonoTextStyle<BinaryColor>,
+    line_buf: &mut heapless::String<64>,
 ) {
+    let pct = CHAN_USE_PCT.load(Ordering::Relaxed);
     display.clear_buffer();
     Text::new(mac_str, Point::new(1, 10), *style)
         .draw(display)
         .unwrap();
     Text::new("RX Listening", Point::new(16, 36), *style)
+        .draw(display)
+        .unwrap();
+    line_buf.clear();
+    let _ = core::fmt::write(line_buf, format_args!("CH:{}%", pct));
+    Text::new(line_buf, Point::new(1, 54), *style)
         .draw(display)
         .unwrap();
     display.flush().unwrap();

@@ -9,8 +9,74 @@ use lora_phy::mod_params::*;
 use lora_phy::sx126x::{self, Sx1262, Sx126x, TcxoCtrlVoltage};
 use lora_phy::LoRa;
 use std::future::Future;
+use std::sync::atomic::Ordering;
+use std::time::Instant;
 
-use crate::{RxPacket, RX_CHAN, TX_CHAN};
+use crate::{RxPacket, CHAN_USE_PCT, RX_CHAN, TX_CHAN};
+
+/// Compute LoRa time-on-air in milliseconds using the standard formula.
+/// Pure function — no hardware access. Uses f32 only for T_sym and fractional preamble.
+fn lora_toa_ms(
+    sf: u32,
+    bw_hz: u32,
+    cr_denom: u32,
+    preamble: u32,
+    payload_bytes: u32,
+    explicit_header: bool,
+    crc: bool,
+) -> u32 {
+    let t_sym = (1u32 << sf) as f32 / bw_hz as f32 * 1000.0; // ms
+    let t_preamble = (preamble as f32 + 4.25) * t_sym;
+
+    // Low data-rate optimization: enabled when symbol time > 16ms
+    let ldro = t_sym > 16.0;
+    let de = if ldro { 2 } else { 0 };
+    let ih = if explicit_header { 0i32 } else { 1 };
+    let crc_bits = if crc { 16i32 } else { 0 };
+
+    let numerator = 8 * payload_bytes as i32 - 4 * sf as i32 + 28 + crc_bits - 20 * ih;
+    let denom = 4 * (sf as i32 - de);
+    let payload_symbols = if numerator <= 0 {
+        8
+    } else {
+        8 + ((numerator + denom - 1) / denom) * (cr_denom as i32)
+    };
+
+    let t_payload = payload_symbols as f32 * t_sym;
+    (t_preamble + t_payload).ceil() as u32
+}
+
+/// EMA channel occupancy tracker.
+/// decay ≈ 0.93 gives ~5s effective window at ~6 packets/sec.
+const EMA_DECAY: f32 = 0.93;
+
+struct ChannelTracker {
+    avg_air_ms: f32,
+    last_update: Instant,
+}
+
+impl ChannelTracker {
+    fn new() -> Self {
+        Self {
+            avg_air_ms: 0.0,
+            last_update: Instant::now(),
+        }
+    }
+
+    fn record(&mut self, air_ms: u32) {
+        let interval_ms = self.last_update.elapsed().as_millis() as f32;
+        self.last_update = Instant::now();
+        // air_ms per interval_ms → percentage
+        let sample = if interval_ms > 0.0 {
+            air_ms as f32 / interval_ms * 100.0
+        } else {
+            0.0
+        };
+        self.avg_air_ms = self.avg_air_ms * EMA_DECAY + sample * (1.0 - EMA_DECAY);
+        let pct = (self.avg_air_ms as u8).min(100);
+        CHAN_USE_PCT.store(pct, Ordering::Relaxed);
+    }
+}
 
 type Iv<'a> = GenericSx126xInterfaceVariant<PinDriver<'a, Output>, PinDriver<'a, Input>>;
 type Radio<'a> =
@@ -79,6 +145,14 @@ pub async fn init(p: Peripherals) -> impl Future<Output = ()> {
     }
 }
 
+/// Our radio config constants for ToA calculation
+const OUR_SF: u32 = 7;
+const OUR_BW_HZ: u32 = 125_000;
+const OUR_CR_DENOM: u32 = 5;
+const OUR_PREAMBLE: u32 = 8;
+const OUR_EXPLICIT_HEADER: bool = true;
+const OUR_CRC: bool = true;
+
 async fn radio_loop(
     lora: &mut Radio<'_>,
     mdltn: &ModulationParams,
@@ -86,6 +160,7 @@ async fn radio_loop(
     rx_params: &PacketParams,
 ) {
     let mut rx_buf = [0u8; 255];
+    let mut tracker = ChannelTracker::new();
 
     loop {
         lora.prepare_for_rx(RxMode::Continuous, mdltn, rx_params)
@@ -95,6 +170,19 @@ async fn radio_loop(
         match select(lora.rx(rx_params, &mut rx_buf), TX_CHAN.receive()).await {
             Either::First(rx_result) => match rx_result {
                 Ok((len, status)) => {
+                    let air_ms = lora_toa_ms(
+                        OUR_SF,
+                        OUR_BW_HZ,
+                        OUR_CR_DENOM,
+                        OUR_PREAMBLE,
+                        len as u32,
+                        OUR_EXPLICIT_HEADER,
+                        OUR_CRC,
+                    );
+                    tracker.record(air_ms);
+                    let pct = CHAN_USE_PCT.load(Ordering::Relaxed);
+                    log::info!("RX [{}B] air={}ms chan={}%", len, air_ms, pct);
+
                     let mut data = heapless::Vec::new();
                     let _ = data.extend_from_slice(&rx_buf[..len as usize]);
                     RX_CHAN
@@ -115,6 +203,20 @@ async fn radio_loop(
                     .await
                     .unwrap();
                 lora.tx().await.unwrap();
+
+                let tx_len = tx_req.data.len() as u32;
+                let air_ms = lora_toa_ms(
+                    OUR_SF,
+                    OUR_BW_HZ,
+                    OUR_CR_DENOM,
+                    OUR_PREAMBLE,
+                    tx_len,
+                    OUR_EXPLICIT_HEADER,
+                    OUR_CRC,
+                );
+                tracker.record(air_ms);
+                let pct = CHAN_USE_PCT.load(Ordering::Relaxed);
+                log::info!("TX [{}B] air={}ms chan={}%", tx_len, air_ms, pct);
             }
         }
     }
