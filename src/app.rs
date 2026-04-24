@@ -44,10 +44,6 @@ const PACKET_BYTES: usize = HEADER_BYTES + PAYLOAD_BYTES; // 26
 /// Packet type constants (5 bits, upper bits of header)
 const PKT_TYPE_VOICE: u8 = 0x00;
 
-/// Jitter buffer: accumulate this many decoded frames before starting I2S playback.
-/// 4 frames × 40ms = 160ms (one packet's worth of lead time).
-const JITTER_FRAMES: usize = FRAMES_PER_PACKET;
-
 /// Convert i16 PCM slice to &[u8] for I2S write.
 fn pcm_as_bytes(pcm: &[i16]) -> &[u8] {
     unsafe { core::slice::from_raw_parts(pcm.as_ptr() as *const u8, pcm.len() * 2) }
@@ -174,10 +170,6 @@ async fn app_loop(
     let mut pcm_buf = vec![0i16; CODEC2_FRAME_SAMPLES].into_boxed_slice();
     let mut decode_buf = vec![0i16; CODEC2_FRAME_SAMPLES].into_boxed_slice();
 
-    // Jitter buffer: ring of stereo frames, written to I2S once we have enough lead time
-    let mut jitter_buf: Vec<Box<[i16]>> = Vec::with_capacity(JITTER_FRAMES + 4);
-    let mut jitter_playing = false;
-
     // Show initial RX state
     draw_rx_screen(&mut display, mac_str, &style, &mut line_buf);
 
@@ -192,47 +184,32 @@ async fn app_loop(
                     let seq = (header & 0x0F) as u8;
                     let payload = &rx_pkt.data[HEADER_BYTES..];
 
-                    // Unpack and decode all frames in this packet
+                    // Unpack, decode, and play each frame immediately
                     let t0 = Instant::now();
+                    let mut stereo_frame = vec![0i16; CODEC2_FRAME_SAMPLES * 2].into_boxed_slice();
                     for i in 0..FRAMES_PER_PACKET {
                         let coded = &payload[i * CODEC2_FRAME_BYTES..(i + 1) * CODEC2_FRAME_BYTES];
                         decoder.decode(&mut decode_buf, coded);
 
-                        // Interleave mono→stereo into a new heap buffer
-                        let mut frame = vec![0i16; CODEC2_FRAME_SAMPLES * 2].into_boxed_slice();
+                        // Interleave mono→stereo
                         for (j, &sample) in decode_buf.iter().enumerate() {
-                            frame[j * 2] = sample;
-                            frame[j * 2 + 1] = sample;
+                            stereo_frame[j * 2] = sample;
+                            stereo_frame[j * 2 + 1] = sample;
                         }
-                        jitter_buf.push(frame);
+                        i2s_tx
+                            .write_all(pcm_as_bytes(&stereo_frame), esp_idf_svc::hal::delay::BLOCK)
+                            .unwrap();
                     }
                     let decode_ms = t0.elapsed().as_millis();
 
-                    if !jitter_playing && jitter_buf.len() >= JITTER_FRAMES {
-                        log::info!(
-                            "Jitter buffer ready ({} frames), starting playback",
-                            jitter_buf.len()
-                        );
-                        jitter_playing = true;
-                    }
-
-                    if jitter_playing {
-                        for f in jitter_buf.drain(..) {
-                            i2s_tx
-                                .write_all(pcm_as_bytes(&f), esp_idf_svc::hal::delay::BLOCK)
-                                .unwrap();
-                        }
-                    }
-
                     log::info!(
-                        "RX [{}B] txid={} seq={} rssi={} snr={} dec={}ms jbuf={}",
+                        "RX [{}B] txid={} seq={} rssi={} snr={} dec={}ms",
                         rx_pkt.data.len(),
                         txid,
                         seq,
                         rx_pkt.rssi,
                         rx_pkt.snr,
                         decode_ms,
-                        jitter_buf.len()
                     );
 
                     display.clear_buffer();
@@ -270,9 +247,6 @@ async fn app_loop(
             }
             Either::Second(_) => {
                 // PTT pressed — stream: read+encode 4 frames, send packet, repeat
-                jitter_buf.clear();
-                jitter_playing = false;
-
                 // Generate random 7-bit txid for this PTT press (dedup key)
                 let txid = (unsafe { esp_idf_svc::sys::esp_random() } & 0x7F) as u8;
                 let mut seq: u8 = 0;
