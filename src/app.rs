@@ -269,6 +269,8 @@ async fn app_loop(
                             let _ = relay.extend_from_slice(&rx_pkt.data);
                             TX_CHAN.send(TxRequest { data: relay }).await;
                             log::info!("RELAY [{}B] txid={} seq={}", rx_pkt.data.len(), txid, seq);
+                            last_played_seq = seq;
+                            continue; // skip decode — fast turnaround
                         }
                         // Decode all frames now, buffer stereo PCM
                         let mut pcm = vec![0i16; STEREO_PACKET_SAMPLES].into_boxed_slice();
