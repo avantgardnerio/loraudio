@@ -8,7 +8,7 @@ use esp_idf_svc::hal::gpio::PinDriver;
 use esp_idf_svc::hal::peripherals::Peripherals;
 use esp_idf_svc::hal::task::block_on;
 use esp_idf_svc::nvs::{EspCustomNvsPartition, EspNvs};
-use std::sync::atomic::{AtomicBool, AtomicU8};
+use std::sync::atomic::AtomicBool;
 use std::thread;
 use std::time::Duration;
 
@@ -28,9 +28,6 @@ pub(crate) struct TxRequest {
 
 pub(crate) static RX_CHAN: Channel<CriticalSectionRawMutex, RxPacket, 2> = Channel::new();
 pub(crate) static TX_CHAN: Channel<CriticalSectionRawMutex, TxRequest, 4> = Channel::new();
-
-/// Channel occupancy percentage (0-100), written by radio task, read by app task.
-pub(crate) static CHAN_USE_PCT: AtomicU8 = AtomicU8::new(0);
 
 /// Whether this device is a repeater, read from NVS at boot.
 pub(crate) static IS_REPEATER: AtomicBool = AtomicBool::new(false);
