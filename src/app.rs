@@ -27,7 +27,7 @@ use std::time::{Duration, Instant};
 
 use std::sync::atomic::Ordering;
 
-use crate::{TxRequest, CHAN_USE_PCT, RX_CHAN, TX_CHAN};
+use crate::{TxRequest, CHAN_USE_PCT, IS_REPEATER, RX_CHAN, TX_CHAN};
 
 /// Codec2 MODE_1200: 320 samples → 6 bytes per frame
 const CODEC2_FRAME_BYTES: usize = 6;
@@ -217,8 +217,14 @@ async fn app_loop(
                     continue;
                 }
 
-                // Header-only = end of transmission — play squelch tail
+                // Header-only = end of transmission — relay if repeater, then squelch
                 if rx_pkt.data.len() == HEADER_BYTES {
+                    if IS_REPEATER.load(Ordering::Relaxed) {
+                        let mut relay = heapless::Vec::new();
+                        let _ = relay.extend_from_slice(&rx_pkt.data);
+                        TX_CHAN.send(TxRequest { data: relay }).await;
+                        log::info!("RELAY EOT txid={}", txid);
+                    }
                     log::info!("RX EOT from txid={}", txid);
                     play_squelch_tail(&mut i2s_tx);
                     reset_rx_state(&mut cur_txid, &mut last_played_seq, &mut seq_buf);
@@ -257,6 +263,13 @@ async fn app_loop(
                         continue;
                     }
                     0..=2 => {
+                        // Repeater: relay after dedup (non-duplicate voice)
+                        if IS_REPEATER.load(Ordering::Relaxed) {
+                            let mut relay = heapless::Vec::new();
+                            let _ = relay.extend_from_slice(&rx_pkt.data);
+                            TX_CHAN.send(TxRequest { data: relay }).await;
+                            log::info!("RELAY [{}B] txid={} seq={}", rx_pkt.data.len(), txid, seq);
+                        }
                         // Decode all frames now, buffer stereo PCM
                         let mut pcm = vec![0i16; STEREO_PACKET_SAMPLES].into_boxed_slice();
                         for i in 0..FRAMES_PER_PACKET {
