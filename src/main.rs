@@ -1,8 +1,9 @@
 mod app;
 mod codec;
 mod radio;
+mod speaker;
 
-use embassy_futures::join::join;
+use embassy_futures::join::join3;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::channel::Channel;
 use esp_idf_svc::hal::gpio::PinDriver;
@@ -10,6 +11,7 @@ use esp_idf_svc::hal::peripherals::Peripherals;
 use esp_idf_svc::hal::task::block_on;
 use esp_idf_svc::nvs::{EspCustomNvsPartition, EspNvs};
 use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
@@ -29,6 +31,13 @@ pub(crate) struct TxRequest {
 
 pub(crate) static RX_CHAN: Channel<CriticalSectionRawMutex, RxPacket, 2> = Channel::new();
 pub(crate) static TX_CHAN: Channel<CriticalSectionRawMutex, TxRequest, 4> = Channel::new();
+
+/// Speaker requests next audio packet from app
+pub(crate) static SPK_REQ: Channel<CriticalSectionRawMutex, (), 1> = Channel::new();
+
+/// App responds: Some(pcm) = play audio, None = go idle
+pub(crate) static SPK_RESP: Channel<CriticalSectionRawMutex, Option<Arc<[i16]>>, 1> =
+    Channel::new();
 
 /// Whether this device is a repeater, read from NVS at boot.
 pub(crate) static IS_REPEATER: AtomicBool = AtomicBool::new(false);
@@ -96,6 +105,14 @@ fn main() {
         })
         .await;
 
+        let speaker_fut = speaker::init(speaker::Peripherals {
+            i2s: peripherals.i2s0,
+            spk_bclk: peripherals.pins.gpio3.into(),
+            spk_din: peripherals.pins.gpio5.into(),
+            spk_ws: peripherals.pins.gpio4.into(),
+        })
+        .await;
+
         let app_fut = app::init(
             app::Peripherals {
                 ptt: peripherals.pins.gpio0.into(),
@@ -105,10 +122,6 @@ fn main() {
                 oled_sda: peripherals.pins.gpio17.into(),
                 oled_scl: peripherals.pins.gpio18.into(),
                 oled_rst: peripherals.pins.gpio21.into(),
-                i2s: peripherals.i2s0,
-                spk_bclk: peripherals.pins.gpio3.into(),
-                spk_din: peripherals.pins.gpio5.into(),
-                spk_ws: peripherals.pins.gpio4.into(),
             },
             mac_str,
             codec_tx,
@@ -116,6 +129,6 @@ fn main() {
         .await;
 
         log::info!("All systems ready");
-        join(radio_fut, app_fut).await;
+        join3(radio_fut, app_fut, speaker_fut).await;
     });
 }

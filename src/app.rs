@@ -1,4 +1,4 @@
-use embassy_futures::select::{select, Either};
+use embassy_futures::select::{select3, Either3};
 use embedded_graphics::mono_font::ascii::FONT_6X10;
 use embedded_graphics::mono_font::MonoTextStyleBuilder;
 use embedded_graphics::pixelcolor::BinaryColor;
@@ -11,17 +11,13 @@ use esp_idf_svc::hal::gpio::{AnyIOPin, Gpio7};
 use esp_idf_svc::hal::gpio::{Input, PinDriver, Pull};
 use esp_idf_svc::hal::i2c::config::Config as I2cConfig;
 use esp_idf_svc::hal::i2c::{I2cDriver, I2C0};
-use esp_idf_svc::hal::i2s::config::{
-    Config as I2sChannelConfig, DataBitWidth, SlotMode, StdClkConfig, StdConfig, StdGpioConfig,
-    StdSlotConfig,
-};
-use esp_idf_svc::hal::i2s::{I2sDriver, I2sTx, I2S0};
 use esp_idf_svc::hal::units::Hertz;
 use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::prelude::*;
 use ssd1306::{I2CDisplayInterface, Ssd1306};
 use std::future::Future;
 use std::sync::mpsc::SyncSender;
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -29,21 +25,31 @@ use std::sync::atomic::Ordering;
 
 use crate::codec::{
     CodecRequest, CodecResponse, CODEC2_FRAME_SAMPLES, CODEC_REPLY, FRAMES_PER_PACKET,
-    HEADER_BYTES, PACKET_BYTES, PAYLOAD_BYTES,
+    HEADER_BYTES, PACKET_BYTES, PAYLOAD_BYTES, STEREO_PACKET_SAMPLES,
 };
-use crate::{TxRequest, IS_REPEATER, RX_CHAN, TX_CHAN};
+use crate::{TxRequest, IS_REPEATER, RX_CHAN, SPK_REQ, SPK_RESP, TX_CHAN};
 
 /// Packet type constants (5 bits, upper bits of header)
 const PKT_TYPE_VOICE: u8 = 0x00;
 
-/// Convert i16 PCM slice to &[u8] for I2S write.
-fn pcm_as_bytes(pcm: &[i16]) -> &[u8] {
-    unsafe { core::slice::from_raw_parts(pcm.as_ptr() as *const u8, pcm.len() * 2) }
-}
-
 /// Convert 12-bit unsigned ADC sample to signed 16-bit PCM centered at 0.
 fn adc_to_pcm(sample: &AdcMeasurement) -> i16 {
     (sample.data() as i16 - 2048) * 16
+}
+
+/// Generate 160ms squelch tail (white noise with fade-out), packet-sized for seq_buf.
+fn generate_squelch() -> Arc<[i16]> {
+    const MONO_SAMPLES: usize = FRAMES_PER_PACKET * CODEC2_FRAME_SAMPLES; // 1280
+    const AMPLITUDE: i32 = 8000;
+    let mut buf = vec![0i16; STEREO_PACKET_SAMPLES].into_boxed_slice();
+    for i in 0..MONO_SAMPLES {
+        let fade = (MONO_SAMPLES - i) as i32 * AMPLITUDE / MONO_SAMPLES as i32;
+        let noise = ((unsafe { esp_idf_svc::sys::esp_random() } % (2 * fade as u32 + 1)) as i32
+            - fade) as i16;
+        buf[i * 2] = noise;
+        buf[i * 2 + 1] = noise;
+    }
+    buf.into()
 }
 
 type Display<'a> = Ssd1306<
@@ -60,10 +66,6 @@ pub struct Peripherals {
     pub oled_sda: AnyIOPin<'static>,
     pub oled_scl: AnyIOPin<'static>,
     pub oled_rst: AnyIOPin<'static>,
-    pub i2s: I2S0<'static>,
-    pub spk_bclk: AnyIOPin<'static>,
-    pub spk_din: AnyIOPin<'static>,
-    pub spk_ws: AnyIOPin<'static>,
 }
 
 pub async fn init(
@@ -100,28 +102,9 @@ pub async fn init(
     display.set_brightness(Brightness::BRIGHTEST).unwrap();
     log::info!("OLED initialized, MAC: {}", mac_str);
 
-    // I2S TX for speaker (MAX98357A, Philips format, 8kHz mono 16-bit)
-    // Larger DMA buffers + auto_clear to avoid underrun clicks
-    let i2s_chan_cfg = I2sChannelConfig::new()
-        .dma_buffer_count(8)
-        .frames_per_buffer(320) // 40ms per buffer = one Codec2 frame
-        .auto_clear(true);
-    let std_config = StdConfig::new(
-        i2s_chan_cfg,
-        StdClkConfig::from_sample_rate_hz(8000),
-        StdSlotConfig::philips_slot_default(DataBitWidth::Bits16, SlotMode::Stereo),
-        StdGpioConfig::default(),
-    );
-    let mut i2s_tx = I2sDriver::<I2sTx>::new_std_tx(
-        p.i2s,
-        &std_config,
-        p.spk_bclk,
-        p.spk_din,
-        None::<AnyIOPin>,
-        p.spk_ws,
-    )
-    .unwrap();
-    log::info!("I2S TX configured (8kHz mono 16-bit Philips)");
+    // Pre-generate audio buffers (Arc to avoid cloning 5KB on every gap)
+    let silence: Arc<[i16]> = vec![0i16; STEREO_PACKET_SAMPLES].into();
+    let squelch = generate_squelch();
 
     // Start continuous ADC (DMA)
     adc.start().unwrap();
@@ -130,26 +113,24 @@ pub async fn init(
     async move {
         // Keep oled_rst alive so the pin doesn't float low (holding OLED in reset)
         let _oled_rst = oled_rst;
-        i2s_tx.tx_enable().unwrap();
-        log::info!("I2S TX enabled");
-        app_loop(button, adc, i2s_tx, display, &mac_str, codec_tx).await;
+        app_loop(button, adc, display, &mac_str, codec_tx, silence, squelch).await;
     }
 }
 
 async fn app_loop(
     mut button: PinDriver<'_, Input>,
     mut adc: AdcContDriver<'_>,
-    mut i2s_tx: I2sDriver<'_, I2sTx>,
     mut display: Display<'_>,
     mac_str: &str,
     codec_tx: SyncSender<CodecRequest>,
+    silence: Arc<[i16]>,
+    squelch: Arc<[i16]>,
 ) {
     let style = MonoTextStyleBuilder::new()
         .font(&FONT_6X10)
         .text_color(BinaryColor::On)
         .build();
 
-    let mut tx_count: u32 = 0;
     let mut line_buf = heapless::String::<64>::new();
     let mut mic_buf = vec![AdcMeasurement::new(); 320].into_boxed_slice();
     let mut pcm_buf = vec![0i16; CODEC2_FRAME_SAMPLES].into_boxed_slice();
@@ -157,8 +138,9 @@ async fn app_loop(
     // Track current transmitter for seq ordering
     let mut cur_txid: Option<u8> = None;
     let mut last_played_seq: u8 = 0;
-    let mut seq_buf: [Option<Box<[i16]>>; 16] = Default::default();
+    let mut seq_buf: [Option<Arc<[i16]>>; 16] = Default::default();
     let mut last_rx_time = Instant::now();
+    let mut spk_active = false; // true once speaker has been kicked out of idle
 
     // Show initial RX state
     draw_rx_screen(&mut display, mac_str, &style);
@@ -167,11 +149,13 @@ async fn app_loop(
         // Auto-reset if no packet from current txid in 500ms
         if cur_txid.is_some() && last_rx_time.elapsed() > Duration::from_millis(500) {
             log::info!("RX timeout, resetting txid lock");
-            reset_rx_state(&mut cur_txid, &mut last_played_seq, &mut seq_buf);
+            let next = (last_played_seq.wrapping_add(1)) & 0x0F;
+            seq_buf[next as usize] = Some(squelch.clone());
+            cur_txid = None;
         }
 
-        match select(RX_CHAN.receive(), button.wait_for_low()).await {
-            Either::First(rx_pkt) => {
+        match select3(RX_CHAN.receive(), button.wait_for_low(), SPK_REQ.receive()).await {
+            Either3::First(rx_pkt) => {
                 if rx_pkt.data.len() < HEADER_BYTES {
                     log::warn!(
                         "RX [{}B] too short, rssi={} snr={}",
@@ -208,8 +192,10 @@ async fn app_loop(
                         log::info!("RELAY EOT txid={}", txid);
                     }
                     log::info!("RX EOT from txid={}", txid);
-                    play_squelch_tail(&mut i2s_tx);
-                    reset_rx_state(&mut cur_txid, &mut last_played_seq, &mut seq_buf);
+                    // Stuff squelch into seq_buf so speaker plays it naturally
+                    let next = (last_played_seq.wrapping_add(1)) & 0x0F;
+                    seq_buf[next as usize] = Some(squelch.clone());
+                    cur_txid = None;
                     continue;
                 }
 
@@ -220,7 +206,8 @@ async fn app_loop(
 
                 let payload = &rx_pkt.data[HEADER_BYTES..];
 
-                if cur_txid.is_none() {
+                let was_idle = cur_txid.is_none();
+                if was_idle {
                     cur_txid = Some(txid);
                     last_played_seq = seq.wrapping_sub(1) & 0x0F;
                 }
@@ -265,7 +252,21 @@ async fn app_loop(
                         {
                             // Ignore stale decode if txid changed during await
                             if cur_txid == Some(txid) {
-                                seq_buf[seq as usize] = Some(pcm);
+                                seq_buf[seq as usize] = Some(pcm.into());
+
+                                // Kick speaker once we have 2 consecutive packets buffered
+                                if !spk_active {
+                                    let next = (last_played_seq.wrapping_add(1)) & 0x0F;
+                                    let next2 = (next.wrapping_add(1)) & 0x0F;
+                                    if seq_buf[next as usize].is_some()
+                                        && seq_buf[next2 as usize].is_some()
+                                    {
+                                        let pcm = seq_buf[next as usize].take().unwrap();
+                                        last_played_seq = next;
+                                        spk_active = true;
+                                        SPK_RESP.send(Some(pcm)).await;
+                                    }
+                                }
                             }
                         }
                     }
@@ -274,16 +275,6 @@ async fn app_loop(
                         reset_rx_state(&mut cur_txid, &mut last_played_seq, &mut seq_buf);
                         continue;
                     }
-                }
-
-                let mut play_seq = (last_played_seq.wrapping_add(1)) & 0x0F;
-                while let Some(pcm) = seq_buf[play_seq as usize].take() {
-                    let _ = i2s_tx.write_all(
-                        pcm_as_bytes(&pcm),
-                        esp_idf_svc::hal::delay::TickType::new_millis(5).into(),
-                    );
-                    last_played_seq = play_seq;
-                    play_seq = (play_seq.wrapping_add(1)) & 0x0F;
                 }
 
                 log::info!(
@@ -305,9 +296,12 @@ async fn app_loop(
                     rx_pkt.snr,
                 );
             }
-            Either::Second(_) => {
-                // PTT pressed — stream: read+encode 4 frames, send packet, repeat
+            Either3::Second(_) => {
+                // PTT pressed — stop speaker immediately, reset RX state
                 reset_rx_state(&mut cur_txid, &mut last_played_seq, &mut seq_buf);
+                spk_active = false;
+                let _ = SPK_RESP.try_send(None);
+
                 // Generate random 7-bit txid for this PTT press (dedup key)
                 let txid = (unsafe { esp_idf_svc::sys::esp_random() } & 0x7F) as u8;
                 let mut seq: u8 = 0;
@@ -353,7 +347,6 @@ async fn app_loop(
                     if let CodecResponse::Encoded { packet } = CODEC_REPLY.receive().await {
                         TX_CHAN.send(TxRequest { data: packet }).await;
                     }
-                    tx_count += 1;
                     seq = (seq + 1) & 0x0F; // wrap at 16
                 }
 
@@ -364,37 +357,36 @@ async fn app_loop(
                 let _ = eot_data.extend_from_slice(&eot_header.to_be_bytes());
                 TX_CHAN.send(TxRequest { data: eot_data }).await;
 
-                log::info!("PTT released — {} packets sent + EOT", tx_count);
+                log::info!("PTT released — {} packets sent + EOT", seq);
 
                 // Redraw RX screen
                 draw_rx_screen(&mut display, mac_str, &style);
+            }
+            Either3::Third(_) => {
+                // Speaker wants next audio
+                let next = (last_played_seq.wrapping_add(1)) & 0x0F;
+                if let Some(pcm) = seq_buf[next as usize].take() {
+                    last_played_seq = next;
+                    SPK_RESP.send(Some(pcm)).await;
+                } else if cur_txid.is_some() {
+                    // Gap — skip this seq, send silence
+                    last_played_seq = next;
+                    log::info!("SPK gap at seq={}, sending silence", next);
+                    SPK_RESP.send(Some(Arc::clone(&silence))).await;
+                } else {
+                    // Transmission ended, nothing left — speaker goes idle
+                    spk_active = false;
+                    SPK_RESP.send(None).await;
+                }
             }
         }
     }
 }
 
-/// Play ~250ms of white noise with fade-out as a squelch tail.
-fn play_squelch_tail(i2s_tx: &mut I2sDriver<'_, I2sTx>) {
-    const TAIL_SAMPLES: usize = 2000; // 250ms at 8kHz
-    const AMPLITUDE: i32 = 8000;
-    let mut buf = vec![0i16; TAIL_SAMPLES * 2].into_boxed_slice(); // stereo
-    for i in 0..TAIL_SAMPLES {
-        let fade = (TAIL_SAMPLES - i) as i32 * AMPLITUDE / TAIL_SAMPLES as i32;
-        let noise = ((unsafe { esp_idf_svc::sys::esp_random() } % (2 * fade as u32 + 1)) as i32
-            - fade) as i16;
-        buf[i * 2] = noise;
-        buf[i * 2 + 1] = noise;
-    }
-    let _ = i2s_tx.write_all(
-        pcm_as_bytes(&buf),
-        esp_idf_svc::hal::delay::TickType::new_millis(5).into(),
-    );
-}
-
 fn reset_rx_state(
     cur_txid: &mut Option<u8>,
     last_played_seq: &mut u8,
-    seq_buf: &mut [Option<Box<[i16]>>; 16],
+    seq_buf: &mut [Option<Arc<[i16]>>; 16],
 ) {
     *cur_txid = None;
     *last_played_seq = 0;

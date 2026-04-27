@@ -118,7 +118,10 @@ async fn radio_loop(
                             Ok((len, status)) => {
                                 log::info!(
                                     "RX end [{}B] {}ms rssi={} snr={}",
-                                    len, rx_ms, status.rssi, status.snr
+                                    len,
+                                    rx_ms,
+                                    status.rssi,
+                                    status.snr
                                 );
 
                                 let mut data = heapless::Vec::new();
