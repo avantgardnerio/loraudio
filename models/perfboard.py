@@ -60,6 +60,8 @@ class Label:
     row: int
     col: int
     text: str
+    rotation: float = 0
+    anchor: str = "middle"
 
 
 class Stripboard:
@@ -102,9 +104,9 @@ class Stripboard:
         self.jumpers.append(j)
         return j
 
-    def label(self, row: int, col: int, text: str) -> Label:
+    def label(self, row: int, col: int, text: str, rotation: float = 0, anchor: str = "middle") -> Label:
         """Add a text annotation near a hole."""
-        lbl = Label(row, col, text)
+        lbl = Label(row, col, text, rotation, anchor)
         self.labels.append(lbl)
         return lbl
 
@@ -314,13 +316,17 @@ class Stripboard:
         """Draw user annotations."""
         for lbl in self.labels:
             hx, hy = self._hole_pos(lbl.row, lbl.col)
-            ET.SubElement(parent, "text", {
-                "x": f"{ox + hx:.2f}", "y": f"{oy + hy + 0.6:.2f}",
-                "text-anchor": "middle",
+            tx, ty = ox + hx, oy + hy + 0.6
+            attrs = {
+                "x": f"{tx:.2f}", "y": f"{ty:.2f}",
+                "text-anchor": lbl.anchor,
                 "font-size": "1.8",
                 "font-family": "sans-serif",
                 "fill": "#cc3333",
-            }).text = lbl.text
+            }
+            if lbl.rotation:
+                attrs["transform"] = f"rotate({lbl.rotation}, {tx:.2f}, {ty:.2f})"
+            ET.SubElement(parent, "text", attrs).text = lbl.text
 
     def render_svg(self, path: str | Path):
         """Render dual-view SVG: top (component side) + bottom (copper side, mirrored)."""

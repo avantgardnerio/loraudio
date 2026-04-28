@@ -585,6 +585,8 @@ Mic AGC</text>
   <circle cx="54.64" cy="18.00" r="0.6" fill="#cc44cc" stroke="none" />
   <text x="14.00" y="31.30" text-anchor="middle" font-size="1.8" font-family="sans-serif" fill="#cc3333">→ USB-C</text>
   <text x="39.40" y="49.08" text-anchor="middle" font-size="1.8" font-family="sans-serif" fill="#cc3333">— trace cuts —</text>
+  <text x="14.00" y="18.60" text-anchor="start" font-size="1.8" font-family="sans-serif" fill="#cc3333" transform="rotate(-90, 14.00, 18.60)">BAT-</text>
+  <text x="16.54" y="18.60" text-anchor="start" font-size="1.8" font-family="sans-serif" fill="#cc3333" transform="rotate(-90, 16.54, 18.60)">PWR_SW</text>
   <text x="14.00" y="21.74" text-anchor="start" font-size="1.5" font-family="monospace" font-weight="bold" fill="#111" transform="rotate(90, 14.00, 21.74)">GND</text>
   <text x="16.54" y="21.74" text-anchor="start" font-size="1.5" font-family="monospace" font-weight="bold" fill="#111" transform="rotate(90, 16.54, 21.74)">3V3a</text>
   <text x="19.08" y="21.74" text-anchor="start" font-size="1.5" font-family="monospace" font-weight="bold" fill="#111" transform="rotate(90, 19.08, 21.74)">3V3b</text>
