@@ -38,7 +38,6 @@ class Component:
     cols: int         # width in holes
     color: str = "#4488cc"
     pins: dict = field(default_factory=dict)  # {pin_name: (row_offset, col_offset)}
-    vertical_labels: bool = False  # True = pin labels rotated 90°
 
 
 @dataclass
@@ -83,10 +82,9 @@ class Stripboard:
         cols: int,
         color: str = "#4488cc",
         pins: dict | None = None,
-        vertical_labels: bool = False,
     ) -> Component:
         """Place a rectangular component on the board."""
-        c = Component(name, row, col, rows, cols, color, pins or {}, vertical_labels)
+        c = Component(name, row, col, rows, cols, color, pins or {})
         self.components.append(c)
         return c
 
@@ -255,24 +253,42 @@ class Stripboard:
                 })
 
     def _svg_pin_labels(self, parent: ET.Element, ox: float, oy: float):
-        """Draw pin labels on top of everything (last in SVG = top z-order).
-        Wide components (pins run horizontally) get vertical labels;
-        tall/square components (pins run vertically) get horizontal labels."""
+        """Draw pin labels facing inward toward component center."""
         for comp in self.components:
-            rotated = comp.vertical_labels
+            # Count how many pins share each row and column
+            from collections import Counter
+            row_counts = Counter(pr for pr, pc in comp.pins.values())
+            col_counts = Counter(pc for pr, pc in comp.pins.values())
+
             for pin_name, (pr, pc) in comp.pins.items():
                 px, py = self._hole_pos(comp.row + pr, comp.col + pc)
-                tx, ty = ox + px + 1.2, oy + py + 0.5
+                # Horizontal run → vertical label, vertical run → horizontal label
+                if row_counts[pr] >= col_counts[pc]:
+                    # Pin is part of a horizontal row → label vertically
+                    if pr < comp.rows / 2:  # top half → point down
+                        tx, ty = ox + px, oy + py + 1.2
+                        rot, anchor = 90, "start"
+                    else:                   # bottom half → point up
+                        tx, ty = ox + px, oy + py - 1.2
+                        rot, anchor = -90, "start"
+                else:
+                    # Pin is part of a vertical column → label horizontally
+                    if pc < comp.cols / 2:  # left half → point right
+                        tx, ty = ox + px + 1.2, oy + py + 0.5
+                        rot, anchor = None, "start"
+                    else:                   # right half → point left
+                        tx, ty = ox + px - 1.2, oy + py + 0.5
+                        rot, anchor = None, "end"
                 attrs = {
                     "x": f"{tx:.2f}", "y": f"{ty:.2f}",
-                    "text-anchor": "start",
+                    "text-anchor": anchor,
                     "font-size": "1.5",
                     "font-family": "monospace",
                     "font-weight": "bold",
                     "fill": "#111",
                 }
-                if rotated:
-                    attrs["transform"] = f"rotate(-90, {tx:.2f}, {ty:.2f})"
+                if rot is not None:
+                    attrs["transform"] = f"rotate({rot}, {tx:.2f}, {ty:.2f})"
                 ET.SubElement(parent, "text", attrs).text = pin_name
 
     def _svg_jumpers(self, parent: ET.Element, ox: float, oy: float):
@@ -299,7 +315,7 @@ class Stripboard:
         for lbl in self.labels:
             hx, hy = self._hole_pos(lbl.row, lbl.col)
             ET.SubElement(parent, "text", {
-                "x": f"{ox + hx:.2f}", "y": f"{oy + hy - 1.5:.2f}",
+                "x": f"{ox + hx:.2f}", "y": f"{oy + hy + 0.6:.2f}",
                 "text-anchor": "middle",
                 "font-size": "1.8",
                 "font-family": "sans-serif",
@@ -380,8 +396,8 @@ def build_layout() -> Stripboard:
     # Placed at top of board, centered horizontally
     # Headers: J3 (left, 18 pins) and J2 (right, 18 pins) — along the long edges
     heltec = board.component(
-        "Heltec V4", row=0, col=0, rows=10, cols=20,
-        color="#2266aa", vertical_labels=True,
+        "Heltec V4", row=1, col=0, rows=10, cols=20,
+        color="#2266aa",
         pins={
             # J3 header (top edge as placed, text readable) — pin 1 at left
             "GND":  (0, 0),   # J3 pin 1
@@ -427,7 +443,7 @@ def build_layout() -> Stripboard:
     # MAX98357A speaker amp — below Heltec, left side
     # ~25×13mm ≈ 10 cols × 5 rows
     board.component(
-        "MAX98357A\nSpeaker Amp", row=12, col=1, rows=5, cols=10,
+        "MAX98357A\nSpeaker Amp", row=13, col=1, rows=5, cols=10,
         color="#22aa44",
         pins={
             "LRC":  (0, 0),  # I2S word select (GPIO4)
@@ -443,7 +459,7 @@ def build_layout() -> Stripboard:
     # MAX9814 mic board — below Heltec, right side
     # ~25×13mm ≈ 10 cols × 5 rows
     board.component(
-        "MAX9814\nMic AGC", row=12, col=14, rows=5, cols=10,
+        "MAX9814\nMic AGC", row=13, col=14, rows=5, cols=10,
         color="#aa4422",
         pins={
             "OUT": (0, 0),  # Analog out → ADC (GPIO6 or 7)
@@ -457,20 +473,20 @@ def build_layout() -> Stripboard:
     # Example cuts — isolate some traces between components
     # (These are placeholders; real cuts TBD when we do pin-by-pin routing)
     for c in range(0, 20):
-        board.cut(11, c)  # Cut row 11 to separate Heltec from lower boards
+        board.cut(12, c)  # Cut row 12 to separate Heltec from lower boards
 
     # Example jumpers — connect I2S signals from Heltec J3 (row 0) to speaker amp
-    # Heltec J3 pins: G3=(0,13), G4=(0,14), G5=(0,15), G6=(0,16)
-    # Amp pins: LRC=row12/col1, BCLK=row13/col1, DIN=row14/col1
-    board.jumper(0, 13, 13, 1, "#0088ff")   # G3 (BCLK) → amp BCLK
-    board.jumper(0, 14, 12, 1, "#00cc44")   # G4 (WS/LRC) → amp LRC
-    board.jumper(0, 15, 14, 1, "#ff4400")   # G5 (DIN) → amp DIN
+    # Heltec J3 pins: G3=(1,13), G4=(1,14), G5=(1,15), G6=(1,16)
+    # Amp pins: LRC=row13/col1, BCLK=row14/col1, DIN=row15/col1
+    board.jumper(0, 13, 14, 0, "#0088ff")   # G3 (BCLK) → amp BCLK
+    board.jumper(0, 14, 13, 0, "#00cc44")   # G4 (WS/LRC) → amp LRC
+    board.jumper(0, 15, 15, 0, "#ff4400")   # G5 (DIN) → amp DIN
     # Mic analog out to Heltec ADC
-    board.jumper(12, 14, 0, 16, "#cc44cc")  # Mic OUT → G6 (ADC)
+    board.jumper(13, 13, 0, 16, "#cc44cc")  # Mic OUT → G6 (ADC)
 
     # Labels
-    board.label(0, 1, "USB-C →")
-    board.label(11, 13, "— trace cuts —")
+    board.label(5, 0, "→ USB-C")
+    board.label(12, 10, "— trace cuts —")
 
     return board
 
