@@ -6,7 +6,7 @@ from pathlib import Path
 OUT = Path(__file__).parent
 
 # Overall dimensions
-WIDTH = 72
+WIDTH = 80
 LENGTH = 110
 HEIGHT = 30
 WALL = 2
@@ -15,7 +15,7 @@ LID_HEIGHT = 8  # how much of the total height is lid
 
 # Amp screw post
 AMP_POST_FROM_TOP = 8.5    # mm from top inside wall (Y axis)
-AMP_POST_FROM_RIGHT = 11   # mm from right inside wall (X axis)
+AMP_POST_FROM_LEFT = 11    # mm from left inside wall (X axis)
 AMP_POST_HEIGHT = 6
 AMP_POST_OD = 5            # outer diameter
 AMP_POST_ID = 1.8          # pilot hole for M2 screw
@@ -42,7 +42,7 @@ floor_z = -HEIGHT / 2 + WALL
 OVERLAP = 0.5  # sink into floor for clean boolean fusion
 
 # Amp posts — positioned from inside walls
-post_x = WIDTH / 2 - WALL - AMP_POST_FROM_RIGHT
+post_x = -(WIDTH / 2 - WALL - AMP_POST_FROM_LEFT)
 post_y1 = LENGTH / 2 - WALL - AMP_POST_FROM_TOP
 post_y2 = post_y1 - 33  # 2nd post 33mm below
 
@@ -90,6 +90,36 @@ sma_hole = Pos(post_x, LENGTH / 2, sma_z) * Rot(90, 0, 0) * Cylinder(
     radius=SMA_HOLE_DIA / 2, height=WALL * 3  # oversized to cut clean through
 )
 bottom = bottom - sma_hole
+
+# Top wall controls — laid out right of antenna (positive X direction)
+# Antenna right edge is at post_x + 6.5 (13mm dia)
+ant_right_x = post_x + 6.5
+controls_z = sma_z  # same Z height as SMA hole
+
+# Power slider cutout: 11x6mm hole, 20mm total with screwdowns
+SLIDER_W = 11   # along X (slide direction)
+SLIDER_H = 6    # along Z
+slider_center_x = ant_right_x + 20 / 2  # 20mm footprint starts at antenna edge
+
+# Encoder holes: 7mm dia, 15mm knobs, 3mm gap between knobs
+ENCODER_DIA = 7
+KNOB_DIA = 15
+KNOB_GAP = 3
+enc1_center_x = ant_right_x + 20 + KNOB_GAP + KNOB_DIA / 2
+enc2_center_x = enc1_center_x + KNOB_DIA / 2 + KNOB_GAP + KNOB_DIA / 2
+
+# Cut slider
+slider_hole = Pos(slider_center_x, LENGTH / 2, controls_z) * Rot(90, 0, 0) * Box(
+    SLIDER_W, WALL * 3, SLIDER_H
+)
+bottom = bottom - slider_hole
+
+# Cut encoder holes
+for enc_x in [enc1_center_x, enc2_center_x]:
+    enc_hole = Pos(enc_x, LENGTH / 2, controls_z) * Rot(90, 0, 0) * Cylinder(
+        radius=ENCODER_DIA / 2, height=WALL * 3
+    )
+    bottom = bottom - enc_hole
 
 # USB-C hole through right wall (positive X)
 USBC_W = 9    # along Y
