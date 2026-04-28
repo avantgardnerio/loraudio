@@ -380,45 +380,47 @@ def build_layout() -> Stripboard:
     # Placed at top of board, centered horizontally
     # Headers: J3 (left, 18 pins) and J2 (right, 18 pins) — along the long edges
     heltec = board.component(
-        "Heltec V4", row=0, col=3, rows=10, cols=20,
+        "Heltec V4", row=0, col=0, rows=10, cols=20,
         color="#2266aa", vertical_labels=True,
         pins={
-            # J3 header (bottom edge of module as placed) — pin 1 at right
-            "GND":  (9, 0),   # J3 pin 1
-            "3V3a": (9, 1),   # J3 pin 2-3
-            "ADC":  (9, 3),   # J3 pin 4 (GPIO37, ADC_Ctrl)
-            "G46":  (9, 4),   # J3 pin 5
-            "G45":  (9, 5),   # J3 pin 6
-            "G42":  (9, 6),   # J3 pin 7
-            "G41":  (9, 7),   # J3 pin 8
-            "G40":  (9, 8),   # J3 pin 9
-            "G39":  (9, 9),   # J3 pin 10
-            "G38":  (9, 10),  # J3 pin 11
-            "G1":   (9, 11),  # J3 pin 12 (VBAT_Read)
-            "G2":   (9, 12),  # J3 pin 13
-            "G3":   (9, 13),  # J3 pin 14 (BCLK)
-            "G4":   (9, 14),  # J3 pin 15 (WS)
-            "G5":   (9, 15),  # J3 pin 16 (DIN)
-            "G6":   (9, 16),  # J3 pin 17 (ADC mic)
-            "G7":   (9, 17),  # J3 pin 18 (ADC mic alt)
-            # J2 header (top edge of module as placed) — pin 1 at right
-            "GND2": (0, 0),   # J2 pin 1
-            "5V":   (0, 1),   # J2 pin 2
-            "Ve":   (0, 2),   # J2 pin 3-4
-            "RX":   (0, 4),   # J2 pin 5 (GPIO44)
-            "TX":   (0, 5),   # J2 pin 6 (GPIO43)
-            "RST":  (0, 6),   # J2 pin 7
-            "G0":   (0, 7),   # J2 pin 8 (PRG/PTT)
-            "G36":  (0, 8),   # J2 pin 9 (Vext)
-            "G35":  (0, 9),   # J2 pin 10 (LED)
-            "G34":  (0, 10),  # J2 pin 11
-            "G33":  (0, 11),  # J2 pin 12
-            "G48":  (0, 12),  # J2 pin 13
-            "G47":  (0, 13),  # J2 pin 14
-            "G26":  (0, 14),  # J2 pin 15
-            "G21":  (0, 15),  # J2 pin 16 (OLED_RST)
-            "D+":   (0, 16),  # J2 pin 17 (USB)
-            "D-":   (0, 17),  # J2 pin 18 (USB)
+            # J3 header (top edge as placed, text readable) — pin 1 at left
+            "GND":  (0, 0),   # J3 pin 1
+            "3V3a": (0, 1),   # J3 pin 2
+            "3V3b": (0, 2),   # J3 pin 3
+            "G37":  (0, 3),   # J3 pin 4 (ADC_Ctrl)
+            "G46":  (0, 4),   # J3 pin 5
+            "G45":  (0, 5),   # J3 pin 6
+            "G42":  (0, 6),   # J3 pin 7
+            "G41":  (0, 7),   # J3 pin 8
+            "G40":  (0, 8),   # J3 pin 9
+            "G39":  (0, 9),   # J3 pin 10
+            "G38":  (0, 10),  # J3 pin 11
+            "G1":   (0, 11),  # J3 pin 12 (VBAT_Read)
+            "G2":   (0, 12),  # J3 pin 13
+            "G3":   (0, 13),  # J3 pin 14 (BCLK)
+            "G4":   (0, 14),  # J3 pin 15 (WS)
+            "G5":   (0, 15),  # J3 pin 16 (DIN)
+            "G6":   (0, 16),  # J3 pin 17 (ADC mic)
+            "G7":   (0, 17),  # J3 pin 18 (ADC mic alt)
+            # J2 header (bottom edge as placed) — pin 1 at left
+            "GND2": (9, 0),   # J2 pin 1
+            "5V":   (9, 1),   # J2 pin 2
+            "Ve1":  (9, 2),   # J2 pin 3
+            "Ve2":  (9, 3),   # J2 pin 4
+            "RX":   (9, 4),   # J2 pin 5 (GPIO44)
+            "TX":   (9, 5),   # J2 pin 6 (GPIO43)
+            "RST":  (9, 6),   # J2 pin 7
+            "G0":   (9, 7),   # J2 pin 8 (PRG/PTT)
+            "G36":  (9, 8),   # J2 pin 9 (Vext)
+            "G35":  (9, 9),   # J2 pin 10 (LED)
+            "G34":  (9, 10),  # J2 pin 11
+            "G33":  (9, 11),  # J2 pin 12
+            "G48":  (9, 12),  # J2 pin 13
+            "G47":  (9, 13),  # J2 pin 14
+            "G26":  (9, 14),  # J2 pin 15
+            "G21":  (9, 15),  # J2 pin 16 (OLED_RST)
+            "D+":   (9, 16),  # J2 pin 17 (USB D+)
+            "D-":   (9, 17),  # J2 pin 18 (USB D-)
         },
     )
 
@@ -454,17 +456,17 @@ def build_layout() -> Stripboard:
 
     # Example cuts — isolate some traces between components
     # (These are placeholders; real cuts TBD when we do pin-by-pin routing)
-    for c in range(3, 23):
+    for c in range(0, 20):
         board.cut(11, c)  # Cut row 11 to separate Heltec from lower boards
 
-    # Example jumpers — connect I2S signals from Heltec J3 to speaker amp
-    # Heltec pins: G3=col16, G4=col17, G5=col18, G6=col19
+    # Example jumpers — connect I2S signals from Heltec J3 (row 0) to speaker amp
+    # Heltec J3 pins: G3=(0,13), G4=(0,14), G5=(0,15), G6=(0,16)
     # Amp pins: LRC=row12/col1, BCLK=row13/col1, DIN=row14/col1
-    board.jumper(9, 16, 13, 1, "#0088ff")   # G3 (BCLK) → amp BCLK
-    board.jumper(9, 17, 12, 1, "#00cc44")   # G4 (WS/LRC) → amp LRC
-    board.jumper(9, 18, 14, 1, "#ff4400")   # G5 (DIN) → amp DIN
+    board.jumper(0, 13, 13, 1, "#0088ff")   # G3 (BCLK) → amp BCLK
+    board.jumper(0, 14, 12, 1, "#00cc44")   # G4 (WS/LRC) → amp LRC
+    board.jumper(0, 15, 14, 1, "#ff4400")   # G5 (DIN) → amp DIN
     # Mic analog out to Heltec ADC
-    board.jumper(12, 14, 9, 19, "#cc44cc")  # Mic OUT → G6 (ADC)
+    board.jumper(12, 14, 0, 16, "#cc44cc")  # Mic OUT → G6 (ADC)
 
     # Labels
     board.label(0, 1, "USB-C →")
