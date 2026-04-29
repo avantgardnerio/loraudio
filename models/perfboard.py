@@ -47,6 +47,15 @@ class Cut:
 
 
 @dataclass
+class Erase:
+    """Scratch away gap between two adjacent pads to connect them."""
+    r1: int
+    c1: int
+    r2: int
+    c2: int
+
+
+@dataclass
 class Jumper:
     r1: int
     c1: int
@@ -72,6 +81,7 @@ class Stripboard:
         self.rows = rows
         self.components: list[Component] = []
         self.cuts: list[Cut] = []
+        self.erases: list[Erase] = []
         self.jumpers: list[Jumper] = []
         self.labels: list[Label] = []
 
@@ -95,6 +105,12 @@ class Stripboard:
         c = Cut(row, col)
         self.cuts.append(c)
         return c
+
+    def erase(self, r1: int, c1: int, r2: int, c2: int) -> Erase:
+        """Scratch away gap between two adjacent pads to connect them."""
+        e = Erase(r1, c1, r2, c2)
+        self.erases.append(e)
+        return e
 
     def jumper(
         self, r1: int, c1: int, r2: int, c2: int, color: str = "#ff8800"
@@ -158,27 +174,27 @@ class Stripboard:
             }).text = str(r)
 
     def _svg_copper_traces(self, parent: ET.Element, ox: float, oy: float, mirror: bool = False):
-        """Draw horizontal copper traces with cuts applied."""
+        """Draw vertical copper traces with cuts applied."""
         cut_set = {(c.row, c.col) for c in self.cuts}
-        for r in range(self.rows):
-            # Build segments: a cut at col C breaks the trace between C-1 and C
+        for c in range(self.cols):
+            # Build segments: a cut at row R breaks the vertical trace at that hole
             segments = []
             seg_start = 0
-            for c in range(self.cols):
+            for r in range(self.rows):
                 if (r, c) in cut_set:
-                    if c > seg_start:
-                        segments.append((seg_start, c - 1))
-                    seg_start = c + 1
-            if seg_start < self.cols:
-                segments.append((seg_start, self.cols - 1))
-            for c_start, c_end in segments:
-                if c_start == c_end:
+                    if r > seg_start:
+                        segments.append((seg_start, r - 1))
+                    seg_start = r + 1
+            if seg_start < self.rows:
+                segments.append((seg_start, self.rows - 1))
+            for r_start, r_end in segments:
+                if r_start == r_end:
                     continue  # single pad, no trace segment to draw
-                x1, y1 = self._hole_pos(r, c_start, mirror)
-                x2, _ = self._hole_pos(r, c_end, mirror)
+                x1, y1 = self._hole_pos(r_start, c, mirror)
+                _, y2 = self._hole_pos(r_end, c, mirror)
                 ET.SubElement(parent, "line", {
                     "x1": f"{ox + x1:.2f}", "y1": f"{oy + y1:.2f}",
-                    "x2": f"{ox + x2:.2f}", "y2": f"{oy + y1:.2f}",
+                    "x2": f"{ox + x1:.2f}", "y2": f"{oy + y2:.2f}",
                     "stroke": "#cc8833", "stroke-width": f"{TRACE_W:.2f}",
                     "stroke-linecap": "round",
                 })
@@ -204,6 +220,18 @@ class Stripboard:
                     "stroke": "#999" if not copper else "none",
                     "stroke-width": "0.1",
                 })
+
+    def _svg_erases(self, parent: ET.Element, ox: float, oy: float, mirror: bool = False):
+        """Draw erased bridges between adjacent pads (copper side)."""
+        for e in self.erases:
+            x1, y1 = self._hole_pos(e.r1, e.c1, mirror)
+            x2, y2 = self._hole_pos(e.r2, e.c2, mirror)
+            ET.SubElement(parent, "line", {
+                "x1": f"{ox + x1:.2f}", "y1": f"{oy + y1:.2f}",
+                "x2": f"{ox + x2:.2f}", "y2": f"{oy + y2:.2f}",
+                "stroke": "#cc8833", "stroke-width": f"{PAD_R * 1.6:.2f}",
+                "stroke-linecap": "round",
+            })
 
     def _svg_cuts(self, parent: ET.Element, ox: float, oy: float, mirror: bool = False):
         """Draw X marks for trace cuts (copper side only)."""
@@ -382,6 +410,7 @@ class Stripboard:
         self._svg_board_outline(svg, 0, oy_bot)
         self._svg_copper_traces(svg, 0, oy_bot, mirror=True)
         self._svg_pads_and_holes(svg, 0, oy_bot, copper=True, mirror=True)
+        self._svg_erases(svg, 0, oy_bot, mirror=True)
         self._svg_cuts(svg, 0, oy_bot, mirror=True)
         self._svg_grid_labels(svg, 0, oy_bot, mirror=True)
 
@@ -476,10 +505,10 @@ def build_layout() -> Stripboard:
         },
     )
 
-    # Example cuts — isolate some traces between components
-    # (These are placeholders; real cuts TBD when we do pin-by-pin routing)
-    for c in range(0, 20):
-        board.cut(12, c)  # Cut row 12 to separate Heltec from lower boards
+    # Trace cuts — break vertical traces to isolate sections
+    for c in range(COLS):
+        board.cut(6, c)   # Between Heltec J3 (row 1) and J2 (row 10)
+        board.cut(12, c)  # Between Heltec and lower boards
 
     # Example jumpers — connect I2S signals from Heltec J3 (row 0) to speaker amp
     # Heltec J3 pins: G3=(1,13), G4=(1,14), G5=(1,15), G6=(1,16)
@@ -492,7 +521,8 @@ def build_layout() -> Stripboard:
 
     # Labels
     board.label(5, 0, "→ USB-C")
-    board.label(12, 10, "— trace cuts —")
+    board.label(6, 22, "— cuts —")
+    board.label(12, 22, "— cuts —")
 
     return board
 
