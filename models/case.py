@@ -11,7 +11,7 @@ LENGTH = 125
 HEIGHT = 30
 WALL = 2
 FILLET_R = 3
-LID_HEIGHT = 8  # how much of the total height is lid
+LID_HEIGHT = 4  # how much of the total height is lid
 
 # Amp screw post
 AMP_POST_FROM_TOP = 8.5    # mm from top inside wall (Y axis)
@@ -190,6 +190,61 @@ mic_hole = Pos(mic_x, mic_y, -HEIGHT / 2) * Cylinder(
     radius=MIC_DIA / 2, height=WALL * 3
 )
 bottom = bottom - mic_hole
+
+# Lid screw posts — 3 posts from floor to split plane, triangle layout
+LID_POST_HEIGHT = split_z - floor_z  # full height to split plane
+LID_CLEARANCE_DIA = 2.4              # clearance hole in lid for M2 screw
+
+lid_post_inset = WALL + AMP_POST_OD / 2  # post center inset from outer wall
+lid_post_locs = [
+    (+(WIDTH / 2 - lid_post_inset), +(LENGTH / 2 - lid_post_inset)),   # top-right (by speaker)
+    (+(WIDTH / 2 - lid_post_inset), -(LENGTH / 2 - lid_post_inset)),   # bottom-right (by mic)
+    (-(WIDTH / 2 - lid_post_inset), -(LENGTH / 2 - lid_post_inset)),   # bottom-left (other side of mic)
+]
+
+for px, py in lid_post_locs:
+    cz = floor_z + (LID_POST_HEIGHT - OVERLAP) / 2
+    post = Pos(px, py, cz) * Cylinder(radius=AMP_POST_OD / 2, height=LID_POST_HEIGHT + OVERLAP)
+    hole = Pos(px, py, cz) * Cylinder(radius=AMP_POST_ID / 2, height=LID_POST_HEIGHT + 1)
+    bottom = bottom + post - hole
+
+# Clearance holes + countersinks through lid for flat-head M2 screws
+CSINK_DIA = 4.0  # M2 flat-head diameter
+csink_depth = (CSINK_DIA - LID_CLEARANCE_DIA) / 2  # 90° cone depth
+lid_hole_z = split_z + LID_HEIGHT / 2
+lid_top_z = HEIGHT / 2
+for px, py in lid_post_locs:
+    hole = Pos(px, py, lid_hole_z) * Cylinder(radius=LID_CLEARANCE_DIA / 2, height=LID_HEIGHT + 1)
+    csink = Pos(px, py, lid_top_z - csink_depth / 2) * Cone(
+        bottom_radius=LID_CLEARANCE_DIA / 2, top_radius=CSINK_DIA / 2, height=csink_depth
+    )
+    lid = lid - hole - csink
+
+# Lid corner guides — tabs extending from lid into case for alignment
+GUIDE_LEN = 15       # mm along edge
+GUIDE_DEPTH = 5      # mm extending into case body
+GUIDE_THICK = 1.5    # mm wall thickness
+GUIDE_GAP = 0.3      # mm print clearance from case inner walls
+
+inner_hx = WIDTH / 2 - WALL - GUIDE_GAP   # inner half-width with clearance
+inner_hy = LENGTH / 2 - WALL - GUIDE_GAP  # inner half-length with clearance
+guide_z = split_z - GUIDE_DEPTH / 2       # center Z of guides (extends below split into case)
+
+guides = None
+for sx, sy in [(+1, +1), (+1, -1), (-1, +1), (-1, -1)]:
+    # L-bracket at each corner: one tab along X-wall, one along Y-wall
+    # Tab along X-wall (constrains Y)
+    gx = sx * (inner_hx - GUIDE_THICK / 2)
+    gy = sy * (inner_hy - GUIDE_LEN / 2 - FILLET_R)
+    tab_x = Pos(gx, gy, guide_z) * Box(GUIDE_THICK, GUIDE_LEN, GUIDE_DEPTH)
+    # Tab along Y-wall (constrains X)
+    gx2 = sx * (inner_hx - GUIDE_LEN / 2 - FILLET_R)
+    gy2 = sy * (inner_hy - GUIDE_THICK / 2)
+    tab_y = Pos(gx2, gy2, guide_z) * Box(GUIDE_LEN, GUIDE_THICK, GUIDE_DEPTH)
+    L = tab_x + tab_y
+    guides = L if guides is None else (guides + L)
+
+lid = lid + guides
 
 # Move both onto the bed (Z=0) and place lid next to bottom
 bottom = Pos(0, 0, -bottom.bounding_box().min.Z) * bottom
