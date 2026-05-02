@@ -7,7 +7,7 @@ OUT = Path(__file__).parent
 
 # Overall dimensions
 WIDTH = 80
-LENGTH = 125
+LENGTH = 145
 HEIGHT = 30
 WALL = 2
 FILLET_R = 3
@@ -15,8 +15,8 @@ LID_HEIGHT = 4  # how much of the total height is lid
 
 # Amp screw post
 AMP_POST_FROM_TOP = 8.5    # mm from top inside wall (Y axis)
-AMP_POST_FROM_LEFT = 11    # mm from left inside wall (X axis)
-AMP_POST_HEIGHT = 6
+AMP_POST_FROM_LEFT = 13    # mm from left inside wall (X axis)
+AMP_POST_HEIGHT = 11
 AMP_POST_OD = 5            # outer diameter
 AMP_POST_ID = 1.8          # pilot hole for M2 screw
 
@@ -49,10 +49,10 @@ post_y2 = post_y1 - 33  # 2nd post 33mm below
 # Perfboard posts — 50x70mm board, landscape (70mm across width, 50mm along length)
 PERF_W = 70
 PERF_L = 50
-PERF_HOLE_FROM_LR = 4.5   # mm from left & right edges of board
-PERF_HOLE_FROM_TB = 2      # mm from top & bottom edges of board
-PERF_POST_HEIGHT = AMP_POST_HEIGHT
-PERF_GAP_FROM_AMP = 8      # mm below lower amp post
+PERF_HOLE_FROM_LR = 5      # mm from left & right edges of board
+PERF_HOLE_FROM_TB = 2.5    # mm from top & bottom edges of board
+PERF_POST_HEIGHT = 6
+PERF_GAP_FROM_AMP = 28     # mm below lower amp post
 
 perf_center_y = post_y2 - PERF_GAP_FROM_AMP - PERF_L / 2
 perf_center_x = 0  # centered in case
@@ -84,9 +84,9 @@ result = bottom + posts_solid - holes_solid
 bottom = result.solids()[0] if hasattr(result, 'solids') else result
 
 # SMA hole through top wall (positive Y), aligned with posts
-SMA_HOLE_DIA = 6.5
+SMA_HOLE_DIA = 7.0
 sma_z = floor_z + AMP_POST_HEIGHT  # top of posts
-sma_hole = Pos(post_x, LENGTH / 2, sma_z) * Rot(90, 0, 0) * Cylinder(
+sma_hole = Pos(post_x - 3, LENGTH / 2, sma_z) * Rot(90, 0, 0) * Cylinder(
     radius=SMA_HOLE_DIA / 2, height=WALL * 3  # oversized to cut clean through
 )
 bottom = bottom - sma_hole
@@ -102,7 +102,7 @@ SLIDER_H = 6    # along Z
 slider_center_x = ant_right_x + 20 / 2  # 20mm footprint starts at antenna edge
 
 # Encoder holes: 7mm dia, 15mm knobs, 3mm gap between knobs
-ENCODER_DIA = 7
+ENCODER_DIA = 7.2
 KNOB_DIA = 15
 KNOB_GAP = 3
 enc1_center_x = ant_right_x + 20 + KNOB_GAP + KNOB_DIA / 2
@@ -114,6 +114,14 @@ slider_hole = Pos(slider_center_x, LENGTH / 2, controls_z) * Rot(90, 0, 0) * Box
 )
 bottom = bottom - slider_hole
 
+# Power switch screw holes, 14mm apart
+SLIDER_SCREW_SPACING = 14
+for sx in [-1, +1]:
+    screw = Pos(slider_center_x + sx * SLIDER_SCREW_SPACING / 2, LENGTH / 2, controls_z) * Rot(90, 0, 0) * Cylinder(
+        radius=AMP_POST_ID / 2, height=WALL * 3
+    )
+    bottom = bottom - screw
+
 # Cut encoder holes
 for enc_x in [enc1_center_x, enc2_center_x]:
     enc_hole = Pos(enc_x, LENGTH / 2, controls_z) * Rot(90, 0, 0) * Cylinder(
@@ -122,9 +130,9 @@ for enc_x in [enc1_center_x, enc2_center_x]:
     bottom = bottom - enc_hole
 
 # PTT button hole through right wall (positive X), 13mm from top wall
-PTT_DIA = 16
+PTT_DIA = 16.5
 ptt_y = LENGTH / 2 - 31  # 31mm from top (antenna end) — split the diff, tune after print
-ptt_z = -2.5  # centered on usable wall height, clears floor and rim
+ptt_z = (floor_z + split_z) / 2  # centered on usable wall height
 ptt_hole = Pos(WIDTH / 2, ptt_y, ptt_z) * Rot(0, 90, 0) * Cylinder(
     radius=PTT_DIA / 2, height=WALL * 3
 )
@@ -134,16 +142,16 @@ bottom = bottom - ptt_hole
 KENWOOD_SPACING = 12
 kenwood_y_top = -(LENGTH / 2 - 45)  # 3.5mm jack 45mm from bottom
 kenwood_z = ptt_z
-for jack_dia, y_off in [(3.5, 0), (2.5, -KENWOOD_SPACING)]:
+for jack_dia, y_off in [(6.0, 0), (4.0, -KENWOOD_SPACING)]:
     jack = Pos(-WIDTH / 2, kenwood_y_top + y_off, kenwood_z) * Rot(0, 90, 0) * Cylinder(
         radius=jack_dia / 2, height=WALL * 3
     )
     bottom = bottom - jack
 
 # USB-C hole through right wall (positive X)
-USBC_W = 9    # along Y
-USBC_H = 4    # along Z
-usbc_top_z = floor_z + AMP_POST_HEIGHT + 10     # upper Z edge
+USBC_W = 10   # along Y
+USBC_H = 5    # along Z
+usbc_top_z = floor_z + AMP_POST_HEIGHT           # upper Z edge
 usbc_center_z = usbc_top_z - USBC_H / 2
 perf_top_post_y = perf_center_y + PERF_L / 2 - PERF_HOLE_FROM_TB
 usbc_base_y = perf_top_post_y - 22                # lower Y edge, 22mm below top perfboard post
@@ -157,7 +165,7 @@ bottom = bottom - usbc_hole
 SCREEN_W = 33   # along X
 SCREEN_H = 19   # along Y
 perf_left_post_x = perf_center_x - PERF_W / 2 + PERF_HOLE_FROM_LR
-screen_center_x = perf_left_post_x + 45
+screen_center_x = perf_left_post_x + 37.5
 screen_center_y = usbc_center_y  # centered on USB-C hole
 screen_hole = Pos(screen_center_x, screen_center_y, -HEIGHT / 2) * Box(
     SCREEN_W, SCREEN_H, WALL * 3  # oversized in Z to cut clean through
@@ -165,7 +173,7 @@ screen_hole = Pos(screen_center_x, screen_center_y, -HEIGHT / 2) * Box(
 bottom = bottom - screen_hole
 
 # Speaker hole through floor (negative Z face), 28x28mm
-SPEAKER_SIZE = 28
+SPEAKER_SIZE = 28.5
 PA_BOARD_W = 26
 inner_left = -WIDTH / 2 + WALL
 speaker_center_x = inner_left + PA_BOARD_W + (WIDTH - 2 * WALL - PA_BOARD_W) / 2
