@@ -85,20 +85,27 @@ bottom = result.solids()[0] if hasattr(result, 'solids') else result
 
 # SMA hole through top wall (positive Y), aligned with posts
 SMA_HOLE_DIA = 7.0
-sma_z = floor_z + AMP_POST_HEIGHT  # top of posts
-sma_hole = Pos(post_x - 3, LENGTH / 2, sma_z) * Rot(90, 0, 0) * Cylinder(
-    radius=SMA_HOLE_DIA / 2, height=WALL * 3  # oversized to cut clean through
+SMA_SLOT_OFFSET = SMA_HOLE_DIA  # Z offset between two holes (1 diameter apart)
+sma_z = floor_z + AMP_POST_HEIGHT  # top of posts — installed position
+for z_off in [0, +SMA_SLOT_OFFSET]:
+    sma_hole = Pos(post_x - 5, LENGTH / 2, sma_z + z_off) * Rot(90, 0, 0) * Cylinder(
+        radius=SMA_HOLE_DIA / 2, height=WALL * 3
+    )
+    bottom = bottom - sma_hole
+# Connect the two circles with a rectangle to make a stadium/slot
+sma_slot = Pos(post_x - 5, LENGTH / 2, sma_z + SMA_SLOT_OFFSET / 2) * Rot(90, 0, 0) * Box(
+    SMA_HOLE_DIA, WALL * 3, SMA_SLOT_OFFSET
 )
-bottom = bottom - sma_hole
+bottom = bottom - sma_slot
 
 # Top wall controls — laid out right of antenna (positive X direction)
 # Antenna right edge is at post_x + 6.5 (13mm dia)
-ant_right_x = post_x + 6.5
+ant_right_x = post_x + 6.5 - 5  # shifted 5mm left to clear screw post
 controls_z = sma_z  # same Z height as SMA hole
 
 # Power slider cutout: 11x6mm hole, 20mm total with screwdowns
-SLIDER_W = 11   # along X (slide direction)
-SLIDER_H = 6    # along Z
+SLIDER_W = 12   # along X (slide direction) — 1mm clearance to screw holes at ±7mm
+SLIDER_H = 8    # along Z
 slider_center_x = ant_right_x + 20 / 2  # 20mm footprint starts at antenna edge
 
 # Encoder holes: 7mm dia, 15mm knobs, 3mm gap between knobs
@@ -131,7 +138,7 @@ for enc_x in [enc1_center_x, enc2_center_x]:
 
 # PTT button hole through right wall (positive X), 13mm from top wall
 PTT_DIA = 16.5
-ptt_y = LENGTH / 2 - 31  # 31mm from top (antenna end) — split the diff, tune after print
+ptt_y = LENGTH / 2 - 23  # 23mm from top (antenna end) — shifted 8mm toward encoders
 ptt_z = (floor_z + split_z) / 2  # centered on usable wall height
 ptt_hole = Pos(WIDTH / 2, ptt_y, ptt_z) * Rot(0, 90, 0) * Cylinder(
     radius=PTT_DIA / 2, height=WALL * 3
@@ -142,7 +149,7 @@ bottom = bottom - ptt_hole
 KENWOOD_SPACING = 12
 kenwood_y_top = -(LENGTH / 2 - 45)  # 3.5mm jack 45mm from bottom
 kenwood_z = ptt_z
-for jack_dia, y_off in [(6.0, 0), (4.0, -KENWOOD_SPACING)]:
+for jack_dia, y_off in [(8.0, 0), (6.0, -KENWOOD_SPACING)]:
     jack = Pos(-WIDTH / 2, kenwood_y_top + y_off, kenwood_z) * Rot(0, 90, 0) * Cylinder(
         radius=jack_dia / 2, height=WALL * 3
     )
@@ -173,13 +180,14 @@ screen_hole = Pos(screen_center_x, screen_center_y, -HEIGHT / 2) * Box(
 bottom = bottom - screen_hole
 
 # Speaker hole through floor (negative Z face), 28x28mm
-SPEAKER_SIZE = 28.5
+SPEAKER_W = 30    # X axis (side with ears)
+SPEAKER_L = 33    # Y axis
 PA_BOARD_W = 26
 inner_left = -WIDTH / 2 + WALL
 speaker_center_x = inner_left + PA_BOARD_W + (WIDTH - 2 * WALL - PA_BOARD_W) / 2
-speaker_center_y = LENGTH / 2 - 12 - SPEAKER_SIZE / 2  # 12mm from top
+speaker_center_y = LENGTH / 2 - 32 - SPEAKER_L / 2  # 32mm from top (shifted 20mm down)
 speaker_hole = Pos(speaker_center_x, speaker_center_y, -HEIGHT / 2) * Box(
-    SPEAKER_SIZE, SPEAKER_SIZE, WALL * 3
+    SPEAKER_W, SPEAKER_L, WALL * 3
 )
 bottom = bottom - speaker_hole
 
@@ -230,27 +238,36 @@ for px, py in lid_post_locs:
 
 # Lid corner guides — tabs extending from lid into case for alignment
 GUIDE_LEN = 15       # mm along edge
-GUIDE_DEPTH = 5      # mm extending into case body
+GUIDE_DEPTH = 2.5    # mm extending below split into case body
 GUIDE_THICK = 1.5    # mm wall thickness
 GUIDE_GAP = 0.3      # mm print clearance from case inner walls
 
-inner_hx = WIDTH / 2 - WALL - GUIDE_GAP   # inner half-width with clearance
-inner_hy = LENGTH / 2 - WALL - GUIDE_GAP  # inner half-length with clearance
-guide_z = split_z - GUIDE_DEPTH / 2       # center Z of guides (extends below split into case)
+inner_hx = WIDTH / 2 - WALL   # flush with lid inner wall
+inner_hy = LENGTH / 2 - WALL
+lid_inner_top = HEIGHT / 2 - WALL         # inside ceiling of lid
+guide_total = (lid_inner_top - split_z) + GUIDE_DEPTH  # lid wall overlap + protrusion into case
+guide_z = split_z + guide_total / 2 - GUIDE_DEPTH  # center Z so top touches lid ceiling, bottom protrudes
 
 guides = None
 for sx, sy in [(+1, +1), (+1, -1), (-1, +1), (-1, -1)]:
     # L-bracket at each corner: one tab along X-wall, one along Y-wall
     # Tab along X-wall (constrains Y)
     gx = sx * (inner_hx - GUIDE_THICK / 2)
-    gy = sy * (inner_hy - GUIDE_LEN / 2 - FILLET_R)
-    tab_x = Pos(gx, gy, guide_z) * Box(GUIDE_THICK, GUIDE_LEN, GUIDE_DEPTH)
+    corner_inset = FILLET_R + 10  # clear screw posts in corners
+    gy = sy * (inner_hy - GUIDE_LEN / 2 - corner_inset)
+    tab_x = Pos(gx, gy, guide_z) * Box(GUIDE_THICK, GUIDE_LEN, guide_total)
     # Tab along Y-wall (constrains X)
-    gx2 = sx * (inner_hx - GUIDE_LEN / 2 - FILLET_R)
+    gx2 = sx * (inner_hx - GUIDE_LEN / 2 - corner_inset)
     gy2 = sy * (inner_hy - GUIDE_THICK / 2)
-    tab_y = Pos(gx2, gy2, guide_z) * Box(GUIDE_LEN, GUIDE_THICK, GUIDE_DEPTH)
-    L = tab_x + tab_y
-    guides = L if guides is None else (guides + L)
+    tab_y = Pos(gx2, gy2, guide_z) * Box(GUIDE_LEN, GUIDE_THICK, guide_total)
+    # Chamfer bottom edges of each tab individually before combining
+    GUIDE_CHAMFER = 0.5
+    guide_bottom_z = guide_z - guide_total / 2
+    for tab in [tab_x, tab_y]:
+        bottom_edges = [e for e in tab.edges() if abs(e.center().Z - guide_bottom_z) < 0.1]
+        if bottom_edges:
+            tab = chamfer(bottom_edges, length=GUIDE_CHAMFER)
+        guides = tab if guides is None else (guides + tab)
 
 lid = lid + guides
 
