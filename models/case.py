@@ -51,7 +51,7 @@ PERF_W = 70
 PERF_L = 50
 PERF_HOLE_FROM_LR = 5      # mm from left & right edges of board
 PERF_HOLE_FROM_TB = 2.5    # mm from top & bottom edges of board
-PERF_POST_HEIGHT = 6
+PERF_POST_HEIGHT = 11
 PERF_GAP_FROM_AMP = 28     # mm below lower amp post
 
 perf_center_y = post_y2 - PERF_GAP_FROM_AMP - PERF_L / 2
@@ -163,8 +163,8 @@ bottom = bottom - kenwood_recess
 
 # USB-C hole through right wall (positive X)
 USBC_W = 13   # along Y
-USBC_H = 7    # along Z
-usbc_center_z = floor_z + PERF_POST_HEIGHT + 5 - 2.5  # centered on original position
+USBC_H = 9    # along Z
+usbc_center_z = -HEIGHT / 2 + FILLET_R + USBC_H / 2  # just above fillet
 usbc_center_y = perf_top_post_y - 22 + 5              # centered on original position
 usbc_hole = Pos(WIDTH / 2, usbc_center_y, usbc_center_z) * Box(
     WALL * 3, USBC_W, USBC_H  # oversized in X to cut clean through
