@@ -112,7 +112,7 @@ enc2_center_x = enc1_center_x + KNOB_DIA / 2 + KNOB_GAP + KNOB_DIA / 2
 # Cut slider
 slider_z = controls_z - 3  # shifted 3mm toward bed
 slider_hole = Pos(slider_center_x, LENGTH / 2, slider_z) * Rot(90, 0, 0) * Box(
-    SLIDER_W, WALL * 3, SLIDER_H
+    SLIDER_W, WALL * 3, WALL * 5
 )
 bottom = bottom - slider_hole
 
@@ -172,10 +172,10 @@ usbc_hole = Pos(WIDTH / 2, usbc_center_y, usbc_center_z) * Box(
 bottom = bottom - usbc_hole
 
 # Screen hole through floor (negative Z face), 33x19mm
-SCREEN_W = 33   # along X
-SCREEN_H = 19   # along Y
+SCREEN_W = 37   # along X (+4mm margin)
+SCREEN_H = 23   # along Y (+4mm margin)
 perf_left_post_x = perf_center_x - PERF_W / 2 + PERF_HOLE_FROM_LR
-screen_center_x = perf_left_post_x + 37.5
+screen_center_x = perf_left_post_x + 37.5 - 8  # shifted 8mm left
 screen_center_y = usbc_center_y  # centered on USB-C hole
 screen_hole = Pos(screen_center_x, screen_center_y, -HEIGHT / 2) * Box(
     SCREEN_W, SCREEN_H, WALL * 3  # oversized in Z to cut clean through
@@ -285,11 +285,12 @@ BATT_W = 55   # X (across width, matching perfboard landscape)
 BATT_L = 35   # Y (along length)
 BATT_H = 12   # Z thickness
 BATT_WALL = 1.5  # retaining wall thickness
-BATT_WALL_H = 11  # retaining wall height (enough to hold battery, not full height)
+BATT_WALL_H = 8   # retaining wall height (enough to hold battery, not full height)
 
 batt_x = perf_center_x
 batt_y = perf_center_y
-batt_cradle_z = lid_inner_z - BATT_WALL_H / 2  # hangs from lid ceiling
+BATT_WALL_EMBED = 1  # mm walls extend into lid for strong bond
+batt_cradle_z = lid_inner_z - BATT_WALL_H / 2 + BATT_WALL_EMBED / 2  # embedded into lid
 
 # Four retaining walls around the battery pocket
 for dx, dy, ww, wl in [
@@ -298,7 +299,7 @@ for dx, dy, ww, wl in [
     (0, -(BATT_L / 2 + BATT_WALL / 2), BATT_W - 14, BATT_WALL),  # bottom
     (0, +(BATT_L / 2 + BATT_WALL / 2), BATT_W - 14, BATT_WALL),  # top
 ]:
-    wall = Pos(batt_x + dx, batt_y + dy, batt_cradle_z) * Box(ww, wl, BATT_WALL_H)
+    wall = Pos(batt_x + dx, batt_y + dy, batt_cradle_z) * Box(ww, wl, BATT_WALL_H + BATT_WALL_EMBED)
     lid = lid + wall
 
 # Inward-facing clips on X-axis (left/right) walls to retain battery
