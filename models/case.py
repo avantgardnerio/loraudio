@@ -97,8 +97,8 @@ ant_right_x = post_x + 6.5 - 5  # shifted 5mm left to clear screw post
 controls_z = floor_z + 11  # original control height — independent of raised amp/SMA
 
 # Power slider cutout: 11x6mm hole, 20mm total with screwdowns
-SLIDER_W = 12   # along X (slide direction) — 1mm clearance to screw holes at ±7mm
-SLIDER_H = 8    # along Z
+SLIDER_W = 10.5 # along X (slide direction)
+SLIDER_H = 9    # along Z
 slider_center_x = ant_right_x + 20 / 2  # 20mm footprint starts at antenna edge
 
 # Encoder holes: 7mm dia, 15mm knobs, 3mm gap between knobs
@@ -142,11 +142,21 @@ bottom = bottom - ptt_hole
 KENWOOD_SPACING = 12
 kenwood_y_top = -(LENGTH / 2 - 45)  # 3.5mm jack 45mm from bottom
 kenwood_z = ptt_z
-for jack_dia, y_off in [(8.0, 0), (6.0, -KENWOOD_SPACING)]:
+for jack_dia, y_off in [(6.4, 0), (4.6, -KENWOOD_SPACING)]:
     jack = Pos(-WIDTH / 2, kenwood_y_top + y_off, kenwood_z) * Rot(0, 90, 0) * Cylinder(
         radius=jack_dia / 2, height=WALL * 3
     )
     bottom = bottom - jack
+
+# Kenwood recess — thin wall from 2mm to 1mm for nut clearance
+KENWOOD_RECESS_DEPTH = 1.0   # mm to remove from outer wall
+kenwood_mid_y = kenwood_y_top - KENWOOD_SPACING / 2  # midpoint between the two jacks
+kenwood_recess_h = KENWOOD_SPACING + 10  # Y span — covers both jacks with margin
+kenwood_recess_w = 10                     # Z span
+kenwood_recess = Pos(-WIDTH / 2, kenwood_mid_y, kenwood_z) * Box(
+    KENWOOD_RECESS_DEPTH * 2, kenwood_recess_h, kenwood_recess_w
+)
+bottom = bottom - kenwood_recess
 
 # USB-C hole through right wall (positive X)
 USBC_W = 10   # along Y
@@ -184,12 +194,18 @@ speaker_hole = Pos(speaker_center_x, speaker_center_y, -HEIGHT / 2) * Box(
 )
 bottom = bottom - speaker_hole
 
-# Speaker screw holes, 36mm apart, centered on speaker
+# Speaker screw posts, 36mm apart, centered on speaker
+SPEAKER_POST_HEIGHT = PERF_POST_HEIGHT - WALL  # 6mm minus floor thickness (speaker face flush)
 for sx in [-18, 18]:
-    screw = Pos(speaker_center_x + sx, speaker_center_y, -HEIGHT / 2) * Cylinder(
-        radius=AMP_POST_ID / 2, height=WALL * 3
-    )
-    bottom = bottom - screw
+    px = speaker_center_x + sx
+    py = speaker_center_y
+    h = SPEAKER_POST_HEIGHT
+    cz = floor_z + (h - OVERLAP) / 2
+    post = Pos(px, py, cz) * Cylinder(radius=AMP_POST_OD / 2, height=h + OVERLAP)
+    bottom = bottom + post
+    cz2 = floor_z + h / 2
+    hole = Pos(px, py, cz2) * Cylinder(radius=AMP_POST_ID / 2, height=h + 1)
+    bottom = bottom - hole
 
 # Mic hole through floor, 53mm below top perfboard post, 4mm right of left post
 MIC_DIA = 10
