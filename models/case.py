@@ -302,7 +302,7 @@ for dx, dy, ww, wl in [
     lid = lid + wall
 
 # Inward-facing clips on X-axis (left/right) walls to retain battery
-CLIP_DEPTH = 1.5   # how far clip protrudes inward (X)
+CLIP_DEPTH = 2.5   # how far clip protrudes inward (X)
 CLIP_H = 1.5       # clip height (Z), protrudes below wall bottom
 clip_len = BATT_L - 14  # same Y length as the X-axis walls
 wall_bottom_z = lid_inner_z - BATT_WALL_H
