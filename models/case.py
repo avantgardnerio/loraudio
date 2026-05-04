@@ -16,7 +16,7 @@ LID_HEIGHT = 4  # how much of the total height is lid
 # Amp screw post
 AMP_POST_FROM_TOP = 8.5    # mm from top inside wall (Y axis)
 AMP_POST_FROM_LEFT = 13    # mm from left inside wall (X axis)
-AMP_POST_HEIGHT = 11
+AMP_POST_HEIGHT = 18      # tops sit 6mm below case side tops
 AMP_POST_OD = 5            # outer diameter
 AMP_POST_ID = 1.8          # pilot hole for M2 screw
 
@@ -44,7 +44,7 @@ OVERLAP = 0.5  # sink into floor for clean boolean fusion
 # Amp posts — positioned from inside walls
 post_x = -(WIDTH / 2 - WALL - AMP_POST_FROM_LEFT)
 post_y1 = LENGTH / 2 - WALL - AMP_POST_FROM_TOP
-post_y2 = post_y1 - 33  # 2nd post 33mm below
+post_y2 = post_y1 - 35.5  # 2nd post 35.5mm below (moved down 1 radius to clear module)
 
 # Perfboard posts — 50x70mm board, landscape (70mm across width, 50mm along length)
 PERF_W = 70
@@ -83,25 +83,18 @@ for px, py, h in all_posts:
 result = bottom + posts_solid - holes_solid
 bottom = result.solids()[0] if hasattr(result, 'solids') else result
 
-# SMA hole through top wall (positive Y), aligned with posts
+# SMA hole through top wall (positive Y), aligned with raised amp posts
 SMA_HOLE_DIA = 7.0
-SMA_SLOT_OFFSET = SMA_HOLE_DIA  # Z offset between two holes (1 diameter apart)
-sma_z = floor_z + AMP_POST_HEIGHT  # top of posts — installed position
-for z_off in [0, +SMA_SLOT_OFFSET]:
-    sma_hole = Pos(post_x - 5, LENGTH / 2, sma_z + z_off) * Rot(90, 0, 0) * Cylinder(
-        radius=SMA_HOLE_DIA / 2, height=WALL * 3
-    )
-    bottom = bottom - sma_hole
-# Connect the two circles with a rectangle to make a stadium/slot
-sma_slot = Pos(post_x - 5, LENGTH / 2, sma_z + SMA_SLOT_OFFSET / 2) * Rot(90, 0, 0) * Box(
-    SMA_HOLE_DIA, WALL * 3, SMA_SLOT_OFFSET
+sma_z = floor_z + AMP_POST_HEIGHT  # top of raised amp posts
+sma_hole = Pos(post_x - 5, LENGTH / 2, sma_z) * Rot(90, 0, 0) * Cylinder(
+    radius=SMA_HOLE_DIA / 2, height=WALL * 3
 )
-bottom = bottom - sma_slot
+bottom = bottom - sma_hole
 
 # Top wall controls — laid out right of antenna (positive X direction)
 # Antenna right edge is at post_x + 6.5 (13mm dia)
 ant_right_x = post_x + 6.5 - 5  # shifted 5mm left to clear screw post
-controls_z = sma_z  # same Z height as SMA hole
+controls_z = floor_z + 11  # original control height — independent of raised amp/SMA
 
 # Power slider cutout: 11x6mm hole, 20mm total with screwdowns
 SLIDER_W = 12   # along X (slide direction) — 1mm clearance to screw holes at ±7mm
@@ -158,7 +151,7 @@ for jack_dia, y_off in [(8.0, 0), (6.0, -KENWOOD_SPACING)]:
 # USB-C hole through right wall (positive X)
 USBC_W = 10   # along Y
 USBC_H = 5    # along Z
-usbc_top_z = floor_z + AMP_POST_HEIGHT           # upper Z edge
+usbc_top_z = floor_z + PERF_POST_HEIGHT + 5        # upper Z edge — 5mm above perfboard posts
 usbc_center_z = usbc_top_z - USBC_H / 2
 perf_top_post_y = perf_center_y + PERF_L / 2 - PERF_HOLE_FROM_TB
 usbc_base_y = perf_top_post_y - 22                # lower Y edge, 22mm below top perfboard post
@@ -242,11 +235,12 @@ GUIDE_DEPTH = 2.5    # mm extending below split into case body
 GUIDE_THICK = 1.5    # mm wall thickness
 GUIDE_GAP = 0.3      # mm print clearance from case inner walls
 
-inner_hx = WIDTH / 2 - WALL   # flush with lid inner wall
-inner_hy = LENGTH / 2 - WALL
-lid_inner_top = HEIGHT / 2 - WALL         # inside ceiling of lid
-guide_total = (lid_inner_top - split_z) + GUIDE_DEPTH  # lid wall overlap + protrusion into case
-guide_z = split_z + guide_total / 2 - GUIDE_DEPTH  # center Z so top touches lid ceiling, bottom protrudes
+inner_hx = WIDTH / 2 - WALL - GUIDE_GAP   # clearance from case inner walls
+inner_hy = LENGTH / 2 - WALL - GUIDE_GAP
+lid_inner_z = HEIGHT / 2 - WALL           # inside ceiling of lid
+LID_OVERLAP = 1.0                         # mm past lid ceiling for clean boolean union
+guide_total = (lid_inner_z - split_z) + GUIDE_DEPTH + LID_OVERLAP
+guide_z = split_z + guide_total / 2 - GUIDE_DEPTH  # top extends into lid floor, bottom protrudes into case
 
 guides = None
 for sx, sy in [(+1, +1), (+1, -1), (-1, +1), (-1, -1)]:
