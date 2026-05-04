@@ -301,6 +301,19 @@ for dx, dy, ww, wl in [
     wall = Pos(batt_x + dx, batt_y + dy, batt_cradle_z) * Box(ww, wl, BATT_WALL_H)
     lid = lid + wall
 
+# Inward-facing clips on X-axis (left/right) walls to retain battery
+CLIP_DEPTH = 1.5   # how far clip protrudes inward (X)
+CLIP_H = 1.5       # clip height (Z), protrudes below wall bottom
+clip_len = BATT_L - 14  # same Y length as the X-axis walls
+wall_bottom_z = lid_inner_z - BATT_WALL_H
+clip_z = wall_bottom_z - CLIP_H / 2  # hangs below wall
+
+for sign in [-1, +1]:
+    # overlap wall horizontally so clip is connected
+    clip_x = batt_x + sign * (BATT_W / 2 - CLIP_DEPTH / 2 + BATT_WALL / 2)
+    clip = Pos(clip_x, batt_y, clip_z) * Box(CLIP_DEPTH + BATT_WALL, clip_len, CLIP_H)
+    lid = lid + clip
+
 lid = lid + guides
 
 # Move both onto the bed (Z=0) and place lid next to bottom
