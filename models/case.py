@@ -15,7 +15,7 @@ LID_HEIGHT = 4  # how much of the total height is lid
 
 # Amp screw post
 AMP_POST_FROM_TOP = 8.5    # mm from top inside wall (Y axis)
-AMP_POST_FROM_LEFT = 13    # mm from left inside wall (X axis)
+AMP_POST_FROM_LEFT = 18    # mm from left inside wall (X axis) — shifted inward to clear 4th lid post
 AMP_POST_HEIGHT = 18      # tops sit 6mm below case side tops
 AMP_POST_OD = 5            # outer diameter
 AMP_POST_ID = 1.8          # pilot hole for M2 screw
@@ -92,8 +92,8 @@ sma_hole = Pos(post_x - 5, LENGTH / 2, sma_z) * Rot(90, 0, 0) * Cylinder(
 bottom = bottom - sma_hole
 
 # Top wall controls — laid out right of antenna (positive X direction)
-# Antenna right edge is at post_x + 6.5 (13mm dia)
-ant_right_x = post_x + 6.5 - 5  # shifted 5mm left to clear screw post
+# Antenna right edge — fixed position, independent of amp post shift
+ant_right_x = -23.5
 controls_z = floor_z + 11  # original control height — independent of raised amp/SMA
 
 # Power slider cutout: 11x6mm hole, 20mm total with screwdowns
@@ -225,6 +225,7 @@ lid_post_locs = [
     (+(WIDTH / 2 - lid_post_inset), +(LENGTH / 2 - lid_post_inset)),   # top-right (by speaker)
     (+(WIDTH / 2 - lid_post_inset), -(LENGTH / 2 - lid_post_inset)),   # bottom-right (by mic)
     (-(WIDTH / 2 - lid_post_inset), -(LENGTH / 2 - lid_post_inset)),   # bottom-left (other side of mic)
+    (-(WIDTH / 2 - lid_post_inset), +(LENGTH / 2 - lid_post_inset)),   # top-left (by amp)
 ]
 
 for px, py in lid_post_locs:
