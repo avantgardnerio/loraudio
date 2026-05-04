@@ -98,8 +98,8 @@ ant_right_x = -23.5
 controls_z = floor_z + 11  # original control height — independent of raised amp/SMA
 
 # Power slider cutout: 11x6mm hole, 20mm total with screwdowns
-SLIDER_W = 11.5 # along X (slide direction)
-SLIDER_H = 9    # along Z
+SLIDER_W = 7    # along X (slide direction) — just the slider nub
+SLIDER_H = 3.5  # along Z
 slider_center_x = ant_right_x + 20 / 2 + 3  # shifted 3mm toward encoders
 
 # Encoder holes: 7mm dia, 15mm knobs, 3mm gap between knobs
@@ -196,7 +196,7 @@ bottom = bottom - speaker_hole
 
 # Speaker screw posts, 36mm apart, centered on speaker
 SPEAKER_POST_HEIGHT = PERF_POST_HEIGHT - WALL  # 6mm minus floor thickness (speaker face flush)
-for sx in [-19, 19]:
+for sx in [-18.5, 18.5]:
     px = speaker_center_x + sx
     py = speaker_center_y
     h = SPEAKER_POST_HEIGHT
@@ -285,7 +285,7 @@ BATT_W = 55   # X (across width, matching perfboard landscape)
 BATT_L = 35   # Y (along length)
 BATT_H = 12   # Z thickness
 BATT_WALL = 1.5  # retaining wall thickness
-BATT_WALL_H = 6  # retaining wall height (enough to hold battery, not full height)
+BATT_WALL_H = 11  # retaining wall height (enough to hold battery, not full height)
 
 batt_x = perf_center_x
 batt_y = perf_center_y
