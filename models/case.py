@@ -17,7 +17,7 @@ LID_HEIGHT = 4  # how much of the total height is lid
 AMP_POST_FROM_TOP = 8.5    # mm from top inside wall (Y axis)
 AMP_POST_FROM_LEFT = 18    # mm from left inside wall (X axis) — shifted inward to clear 4th lid post
 AMP_POST_HEIGHT = 18      # tops sit 6mm below case side tops
-AMP_POST_OD = 5            # outer diameter
+AMP_POST_OD = 4.5          # outer diameter — trimmed for module clearance
 AMP_POST_ID = 1.8          # pilot hole for M2 screw
 
 # Full outer shell
@@ -44,7 +44,7 @@ OVERLAP = 0.5  # sink into floor for clean boolean fusion
 # Amp posts — positioned from inside walls
 post_x = -(WIDTH / 2 - WALL - AMP_POST_FROM_LEFT)
 post_y1 = LENGTH / 2 - WALL - AMP_POST_FROM_TOP
-post_y2 = post_y1 - 35.5  # 2nd post 35.5mm below (moved down 1 radius to clear module)
+post_y2 = post_y1 - 34.6  # 2nd post 34.6mm below (moved up 0.9mm to clear board)
 
 # Perfboard posts — 50x70mm board, landscape (70mm across width, 50mm along length)
 PERF_W = 70
@@ -56,6 +56,7 @@ PERF_GAP_FROM_AMP = 28     # mm below lower amp post
 
 perf_center_y = post_y2 - PERF_GAP_FROM_AMP - PERF_L / 2
 perf_center_x = 0  # centered in case
+perf_top_post_y = perf_center_y + PERF_L / 2 - PERF_HOLE_FROM_TB
 
 # Collect all post locations: (x, y, height)
 all_posts = []
@@ -97,9 +98,9 @@ ant_right_x = -23.5
 controls_z = floor_z + 11  # original control height — independent of raised amp/SMA
 
 # Power slider cutout: 11x6mm hole, 20mm total with screwdowns
-SLIDER_W = 10.5 # along X (slide direction)
+SLIDER_W = 11.5 # along X (slide direction)
 SLIDER_H = 9    # along Z
-slider_center_x = ant_right_x + 20 / 2  # 20mm footprint starts at antenna edge
+slider_center_x = ant_right_x + 20 / 2 + 3  # shifted 3mm toward encoders
 
 # Encoder holes: 7mm dia, 15mm knobs, 3mm gap between knobs
 ENCODER_DIA = 7.2
@@ -109,7 +110,8 @@ enc1_center_x = ant_right_x + 20 + KNOB_GAP + KNOB_DIA / 2
 enc2_center_x = enc1_center_x + KNOB_DIA / 2 + KNOB_GAP + KNOB_DIA / 2
 
 # Cut slider
-slider_hole = Pos(slider_center_x, LENGTH / 2, controls_z) * Rot(90, 0, 0) * Box(
+slider_z = controls_z - 3  # shifted 3mm toward bed
+slider_hole = Pos(slider_center_x, LENGTH / 2, slider_z) * Rot(90, 0, 0) * Box(
     SLIDER_W, WALL * 3, SLIDER_H
 )
 bottom = bottom - slider_hole
@@ -117,7 +119,7 @@ bottom = bottom - slider_hole
 # Power switch screw holes, 14mm apart
 SLIDER_SCREW_SPACING = 14
 for sx in [-1, +1]:
-    screw = Pos(slider_center_x + sx * SLIDER_SCREW_SPACING / 2, LENGTH / 2, controls_z) * Rot(90, 0, 0) * Cylinder(
+    screw = Pos(slider_center_x + sx * SLIDER_SCREW_SPACING / 2, LENGTH / 2, slider_z) * Rot(90, 0, 0) * Cylinder(
         radius=AMP_POST_ID / 2, height=WALL * 3
     )
     bottom = bottom - screw
@@ -140,8 +142,11 @@ bottom = bottom - ptt_hole
 
 # Kenwood jack through left wall (negative X), 3.5mm on top, 2.5mm below, 12mm apart
 KENWOOD_SPACING = 12
-kenwood_y_top = -(LENGTH / 2 - 45)  # 3.5mm jack 45mm from bottom
-kenwood_z = ptt_z
+kenwood_recess_w = 10                     # Z span of recess
+kenwood_recess_h = KENWOOD_SPACING + 10  # Y span — covers both jacks with margin
+kenwood_y_top = (perf_top_post_y + AMP_POST_OD / 2 + 3  # 3mm above top perf post edge
+                 + KENWOOD_SPACING / 2 + kenwood_recess_h / 2)  # offset so recess bottom clears
+kenwood_z = -HEIGHT / 2 + FILLET_R + kenwood_recess_w / 2 + 2  # recess clears fillet + 2mm margin
 for jack_dia, y_off in [(6.4, 0), (4.6, -KENWOOD_SPACING)]:
     jack = Pos(-WIDTH / 2, kenwood_y_top + y_off, kenwood_z) * Rot(0, 90, 0) * Cylinder(
         radius=jack_dia / 2, height=WALL * 3
@@ -151,21 +156,16 @@ for jack_dia, y_off in [(6.4, 0), (4.6, -KENWOOD_SPACING)]:
 # Kenwood recess — thin wall from 2mm to 1mm for nut clearance
 KENWOOD_RECESS_DEPTH = 1.0   # mm to remove from outer wall
 kenwood_mid_y = kenwood_y_top - KENWOOD_SPACING / 2  # midpoint between the two jacks
-kenwood_recess_h = KENWOOD_SPACING + 10  # Y span — covers both jacks with margin
-kenwood_recess_w = 10                     # Z span
 kenwood_recess = Pos(-WIDTH / 2, kenwood_mid_y, kenwood_z) * Box(
     KENWOOD_RECESS_DEPTH * 2, kenwood_recess_h, kenwood_recess_w
 )
 bottom = bottom - kenwood_recess
 
 # USB-C hole through right wall (positive X)
-USBC_W = 10   # along Y
-USBC_H = 5    # along Z
-usbc_top_z = floor_z + PERF_POST_HEIGHT + 5        # upper Z edge — 5mm above perfboard posts
-usbc_center_z = usbc_top_z - USBC_H / 2
-perf_top_post_y = perf_center_y + PERF_L / 2 - PERF_HOLE_FROM_TB
-usbc_base_y = perf_top_post_y - 22                # lower Y edge, 22mm below top perfboard post
-usbc_center_y = usbc_base_y + USBC_W / 2
+USBC_W = 13   # along Y
+USBC_H = 7    # along Z
+usbc_center_z = floor_z + PERF_POST_HEIGHT + 5 - 2.5  # centered on original position
+usbc_center_y = perf_top_post_y - 22 + 5              # centered on original position
 usbc_hole = Pos(WIDTH / 2, usbc_center_y, usbc_center_z) * Box(
     WALL * 3, USBC_W, USBC_H  # oversized in X to cut clean through
 )
@@ -196,7 +196,7 @@ bottom = bottom - speaker_hole
 
 # Speaker screw posts, 36mm apart, centered on speaker
 SPEAKER_POST_HEIGHT = PERF_POST_HEIGHT - WALL  # 6mm minus floor thickness (speaker face flush)
-for sx in [-18, 18]:
+for sx in [-19, 19]:
     px = speaker_center_x + sx
     py = speaker_center_y
     h = SPEAKER_POST_HEIGHT
@@ -279,6 +279,27 @@ for sx, sy in [(+1, +1), (+1, -1), (-1, +1), (-1, -1)]:
         if bottom_edges:
             tab = chamfer(bottom_edges, length=GUIDE_CHAMFER)
         guides = tab if guides is None else (guides + tab)
+
+# Battery cradle on lid interior — centered over perfboard
+BATT_W = 55   # X (across width, matching perfboard landscape)
+BATT_L = 35   # Y (along length)
+BATT_H = 12   # Z thickness
+BATT_WALL = 1.5  # retaining wall thickness
+BATT_WALL_H = 6  # retaining wall height (enough to hold battery, not full height)
+
+batt_x = perf_center_x
+batt_y = perf_center_y
+batt_cradle_z = lid_inner_z - BATT_WALL_H / 2  # hangs from lid ceiling
+
+# Four retaining walls around the battery pocket
+for dx, dy, ww, wl in [
+    (-(BATT_W / 2 + BATT_WALL / 2), 0, BATT_WALL, BATT_L - 14),  # left
+    (+(BATT_W / 2 + BATT_WALL / 2), 0, BATT_WALL, BATT_L - 14),  # right
+    (0, -(BATT_L / 2 + BATT_WALL / 2), BATT_W - 14, BATT_WALL),  # bottom
+    (0, +(BATT_L / 2 + BATT_WALL / 2), BATT_W - 14, BATT_WALL),  # top
+]:
+    wall = Pos(batt_x + dx, batt_y + dy, batt_cradle_z) * Box(ww, wl, BATT_WALL_H)
+    lid = lid + wall
 
 lid = lid + guides
 
