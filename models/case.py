@@ -163,8 +163,8 @@ bottom = bottom - kenwood_recess
 
 # USB-C hole through right wall (positive X)
 USBC_W = 13   # along Y
-USBC_H = 6    # along Z
-usbc_center_z = -HEIGHT / 2 + FILLET_R + USBC_H / 2  # just above fillet
+USBC_H = 8    # along Z
+usbc_center_z = -HEIGHT / 2 + FILLET_R + 3  # center fixed, grow symmetrically
 usbc_center_y = perf_top_post_y - 22 + 5              # centered on original position
 usbc_hole = Pos(WIDTH / 2, usbc_center_y, usbc_center_z) * Box(
     WALL * 3, USBC_W, USBC_H  # oversized in X to cut clean through
