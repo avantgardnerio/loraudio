@@ -100,7 +100,7 @@ controls_z = floor_z + 11  # original control height — independent of raised a
 # Power slider cutout: 11x6mm hole, 20mm total with screwdowns
 SLIDER_W = 7    # along X (slide direction) — just the slider nub
 SLIDER_H = 3.5  # along Z
-slider_center_x = ant_right_x + 20 / 2 + 3  # shifted 3mm toward encoders
+slider_center_x = ant_right_x + 20 / 2 + 5  # shifted 5mm toward encoders
 
 # Encoder holes: 7mm dia, 15mm knobs, 3mm gap between knobs
 ENCODER_DIA = 7.2
@@ -163,7 +163,7 @@ bottom = bottom - kenwood_recess
 
 # USB-C hole through right wall (positive X)
 USBC_W = 13   # along Y
-USBC_H = 9    # along Z
+USBC_H = 6    # along Z
 usbc_center_z = -HEIGHT / 2 + FILLET_R + USBC_H / 2  # just above fillet
 usbc_center_y = perf_top_post_y - 22 + 5              # centered on original position
 usbc_hole = Pos(WIDTH / 2, usbc_center_y, usbc_center_z) * Box(
@@ -195,7 +195,7 @@ speaker_hole = Pos(speaker_center_x, speaker_center_y, -HEIGHT / 2) * Box(
 bottom = bottom - speaker_hole
 
 # Speaker screw posts, 36mm apart, centered on speaker
-SPEAKER_POST_HEIGHT = PERF_POST_HEIGHT - WALL  # 6mm minus floor thickness (speaker face flush)
+SPEAKER_POST_HEIGHT = PERF_POST_HEIGHT - WALL - 4  # shortened for speaker fit
 for sx in [-18.5, 18.5]:
     px = speaker_center_x + sx
     py = speaker_center_y
@@ -208,7 +208,7 @@ for sx in [-18.5, 18.5]:
     bottom = bottom - hole
 
 # Mic hole through floor, 53mm below top perfboard post, 4mm right of left post
-MIC_DIA = 10
+MIC_DIA = 14
 mic_x = 0  # centered horizontally
 mic_y = perf_top_post_y - 53
 mic_hole = Pos(mic_x, mic_y, -HEIGHT / 2) * Cylinder(
@@ -288,7 +288,7 @@ BATT_WALL = 1.5  # retaining wall thickness
 BATT_WALL_H = 8   # retaining wall height (enough to hold battery, not full height)
 
 batt_x = perf_center_x
-batt_y = perf_center_y
+batt_y = perf_center_y - 15  # shifted 15mm down
 BATT_WALL_EMBED = 1  # mm walls extend into lid for strong bond
 batt_cradle_z = lid_inner_z - BATT_WALL_H / 2 + BATT_WALL_EMBED / 2  # embedded into lid
 
