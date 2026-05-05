@@ -8,7 +8,7 @@ OUT = Path(__file__).parent
 # Overall dimensions
 WIDTH = 80
 LENGTH = 145
-HEIGHT = 30
+HEIGHT = 34
 WALL = 2
 FILLET_R = 3
 LID_HEIGHT = 4  # how much of the total height is lid
