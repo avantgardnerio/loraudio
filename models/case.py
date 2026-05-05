@@ -116,6 +116,26 @@ slider_hole = Pos(slider_center_x, LENGTH / 2, slider_z) * Rot(90, 0, 0) * Box(
 )
 bottom = bottom - slider_hole
 
+# Lanyard loop — half-circle protruding from top wall
+LANYARD_DIA = 14       # diameter of semicircle
+LANYARD_THICK = 6      # Z thickness
+lanyard_x = slider_center_x  # aligned with power switch center
+lanyard_z = sma_z             # same Z as SMA hole center
+lanyard_cyl = Pos(lanyard_x, LENGTH / 2, lanyard_z) * Cylinder(
+    radius=LANYARD_DIA / 2, height=LANYARD_THICK
+)
+# Remove inner half — keep only the part protruding beyond the wall
+lanyard_cut = Pos(lanyard_x, LENGTH / 2 - LANYARD_DIA / 2, lanyard_z) * Box(
+    LANYARD_DIA + 2, LANYARD_DIA, LANYARD_THICK + 2
+)
+lanyard_loop = lanyard_cyl - lanyard_cut
+# Drill hole through loop for lanyard — bottom of hole at wall surface
+LANYARD_HOLE_DIA = 6
+lanyard_hole = Pos(lanyard_x, LENGTH / 2 + LANYARD_HOLE_DIA / 2, lanyard_z) * Cylinder(
+    radius=LANYARD_HOLE_DIA / 2, height=LANYARD_THICK + 2
+)
+bottom = bottom + (lanyard_loop - lanyard_hole)
+
 # Power switch screw holes, 14mm apart
 SLIDER_SCREW_SPACING = 14
 for sx in [-1, +1]:
