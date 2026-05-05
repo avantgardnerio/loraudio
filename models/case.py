@@ -129,6 +129,13 @@ lanyard_cut = Pos(lanyard_x, LENGTH / 2 - LANYARD_DIA / 2, lanyard_z) * Box(
     LANYARD_DIA + 2, LANYARD_DIA, LANYARD_THICK + 2
 )
 lanyard_loop = lanyard_cyl - lanyard_cut
+# Taper bottom face: 6mm thick at wall → 2mm at outer edge (no supports needed)
+LANYARD_THIN = 2
+taper_plane = Plane(
+    origin=(lanyard_x, LENGTH / 2, lanyard_z - LANYARD_THICK / 2),
+    z_dir=(0, -(LANYARD_THICK - LANYARD_THIN), LANYARD_DIA / 2),
+)
+lanyard_loop = split(lanyard_loop, taper_plane, keep=Keep.TOP)
 # Drill hole through loop for lanyard — bottom of hole at wall surface
 LANYARD_HOLE_DIA = 6
 lanyard_hole = Pos(lanyard_x, LENGTH / 2 + LANYARD_HOLE_DIA / 2, lanyard_z) * Cylinder(
