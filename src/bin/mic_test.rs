@@ -24,9 +24,9 @@ use std::time::Duration;
 /// Display width = number of waveform samples to show
 const WAVE_W: usize = 128;
 /// Waveform area height (top portion of display)
-const WAVE_H: i32 = 48;
+const WAVE_H: i32 = 40;
 /// VU bar Y position
-const VU_Y: i32 = 52;
+const VU_Y: i32 = 54;
 const VU_H: i32 = 10;
 
 fn main() {
@@ -144,10 +144,10 @@ fn main() {
                 .unwrap();
         }
 
-        // Peak label
+        // Peak label (between waveform and VU bar)
         label_buf.clear();
         let _ = core::write!(label_buf, "pk:{}", peak);
-        Text::new(&label_buf, Point::new(90, WAVE_H + 8), style)
+        Text::new(&label_buf, Point::new(0, WAVE_H + 10), style)
             .draw(&mut display)
             .unwrap();
 

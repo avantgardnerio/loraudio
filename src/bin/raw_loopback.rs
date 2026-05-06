@@ -1,7 +1,6 @@
-//! Audio loopback test with Codec2 — hold PTT to record, release to encode→decode→play.
-//! Build & flash: cargo build --bin audio_test && espflash flash -p /dev/ttyACM1 target/xtensa-esp32s3-espidf/debug/audio_test
+//! Raw audio loopback test (no Codec2) — hold PTT to record, release to play back raw PCM.
+//! Build & flash: cargo build --bin raw_loopback && espflash flash -p /dev/ttyACM1 --partition-table target/xtensa-esp32s3-espidf/debug/partition-table.bin target/xtensa-esp32s3-espidf/debug/raw_loopback
 
-use codec2::{Codec2, Codec2Mode};
 use embedded_graphics::mono_font::ascii::FONT_10X20;
 use embedded_graphics::mono_font::MonoTextStyleBuilder;
 use embedded_graphics::pixelcolor::BinaryColor;
@@ -25,13 +24,8 @@ use ssd1306::{I2CDisplayInterface, Ssd1306};
 use std::thread;
 use std::time::Duration;
 
-/// Codec2 MODE_3200: 160 samples (20ms) → 8 bytes per frame
-const FRAME_SAMPLES: usize = 160;
-const FRAME_BYTES: usize = 8;
-
-/// Max recording: 5 seconds = 250 Codec2 frames
-const MAX_FRAMES: usize = 250;
-const MAX_SAMPLES: usize = MAX_FRAMES * FRAME_SAMPLES; // 40000
+/// Max recording: 5 seconds at 8kHz
+const MAX_SAMPLES: usize = 40000;
 
 /// Convert 12-bit unsigned ADC to signed 16-bit PCM.
 fn adc_to_pcm(sample: &AdcMeasurement) -> i16 {
@@ -45,7 +39,7 @@ fn pcm_as_bytes(pcm: &[i16]) -> &[u8] {
 fn main() {
     esp_idf_svc::sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default();
-    log::info!("Audio loopback test starting...");
+    log::info!("Raw audio loopback test starting...");
 
     let p = Peripherals::take().unwrap();
 
@@ -108,26 +102,18 @@ fn main() {
         .text_color(BinaryColor::On)
         .build();
 
-    let mut show_status = |display: &mut ssd1306::Ssd1306<_, _, ssd1306::mode::BufferedGraphicsMode<_>>, msg: &str| {
+    let show_status = |display: &mut ssd1306::Ssd1306<_, _, ssd1306::mode::BufferedGraphicsMode<_>>, msg: &str| {
         display.clear_buffer();
         let _ = Text::new(msg, Point::new(10, 38), style).draw(display);
         let _ = display.flush();
     };
 
-    // Codec2 encoder + decoder
-    let mut encoder = Box::new(Codec2::new(Codec2Mode::MODE_3200));
-    let mut decoder = Box::new(Codec2::new(Codec2Mode::MODE_3200));
-    log::info!("Codec2 initialized (MODE_3200)");
-
     // Heap buffers
-    let mut mic_buf = vec![AdcMeasurement::new(); FRAME_SAMPLES];
-    let mut rec_buf = vec![0i16; MAX_SAMPLES]; // mono recording buffer
-    let mut codec_buf = vec![0u8; MAX_FRAMES * FRAME_BYTES]; // encoded frames
-    let mut decode_buf = vec![0i16; FRAME_SAMPLES];
-    let mut stereo_buf = vec![0i16; FRAME_SAMPLES * 2]; // one frame stereo interleaved
+    let mut mic_buf = vec![AdcMeasurement::new(); 320];
+    let mut rec_buf = vec![0i16; MAX_SAMPLES];
+    let mut stereo_buf = vec![0i16; 640]; // 320 mono → 640 stereo interleaved
 
-    log::info!("Ready — hold PTT to record (max 5s), release to encode→decode→play");
-
+    log::info!("Ready — hold PTT to record (max 5s), release to play raw PCM");
     adc.start().unwrap();
     show_status(&mut display, "IDLE");
 
@@ -152,45 +138,28 @@ fn main() {
             }
             rec_len += n;
         }
-        // Round down to whole Codec2 frames
-        let num_frames = rec_len / FRAME_SAMPLES;
-        let rec_len = num_frames * FRAME_SAMPLES;
-        log::info!(
-            "Recorded {} samples ({}ms, {} frames)",
-            rec_len,
-            rec_len / 8,
-            num_frames
-        );
+        log::info!("Recorded {} samples ({}ms)", rec_len, rec_len / 8);
 
-        // --- Encode ---
-        log::info!("Encoding...");
-        let t0 = std::time::Instant::now();
-        for f in 0..num_frames {
-            let pcm = &rec_buf[f * FRAME_SAMPLES..(f + 1) * FRAME_SAMPLES];
-            let coded = &mut codec_buf[f * FRAME_BYTES..(f + 1) * FRAME_BYTES];
-            encoder.encode(coded, pcm);
-        }
-        let enc_ms = t0.elapsed().as_millis();
-        log::info!(
-            "Encoded {} frames in {}ms ({}ms/frame)",
-            num_frames,
-            enc_ms,
-            enc_ms / num_frames as u128
-        );
-
-        // --- Decode + Play ---
-        log::info!("Decoding + playing...");
+        // --- Play back raw ---
+        log::info!("Playing raw...");
         show_status(&mut display, "PLAYING");
-        for f in 0..num_frames {
-            let coded = &codec_buf[f * FRAME_BYTES..(f + 1) * FRAME_BYTES];
-            decoder.decode(&mut decode_buf, coded);
 
-            for (i, &sample) in decode_buf.iter().enumerate() {
+        // Play in 320-sample chunks (40ms each)
+        let mut pos = 0;
+        while pos < rec_len {
+            let chunk_end = (pos + 320).min(rec_len);
+            let chunk = &rec_buf[pos..chunk_end];
+
+            // Mono → stereo interleave
+            for (i, &sample) in chunk.iter().enumerate() {
                 stereo_buf[i * 2] = sample;
                 stereo_buf[i * 2 + 1] = sample;
             }
-            i2s.write_all(pcm_as_bytes(&stereo_buf), BLOCK).unwrap();
+            let stereo_bytes = pcm_as_bytes(&stereo_buf[..chunk.len() * 2]);
+            i2s.write_all(stereo_bytes, BLOCK).unwrap();
+            pos = chunk_end;
         }
+
         log::info!("Playback done");
         show_status(&mut display, "IDLE");
     }
