@@ -151,6 +151,31 @@ rust-toolchain.toml  # Pins to "esp" toolchain channel
 build.rs             # Links defmt-discard.x
 ```
 
+## Bill of Materials
+
+### Handset (~$88)
+
+| Component | Part | Qty | Est. Cost |
+|-----------|------|-----|-----------|
+| MCU + LoRa + GPS | Heltec WiFi LoRa 32 V4 | 1 | $40 |
+| RF amplifier | AB-IOT-868 "Air Buddy" (902-928 MHz, bidirectional TX+LNA) | 1 | $25 |
+| Speaker amp | MAX98357A I2S Class D breakout | 1 | $5 |
+| Speaker | 8 ohm 1W mini (JST-PH1.25mm) | 1 | $2 |
+| Microphone | MAX9814 electret with AGC (analog out) | 1 | $3 |
+| Antenna | 5 dBi SMA whip (915 MHz) | 1 | $10 |
+| Battery | 3.7V 2000mAh LiPo (JST 1.25) | 1 | $5 |
+| Adapter | U.FL-to-SMA pigtail + SMA F-F barrel coupler | 1 | $3 |
+| Volume encoder | EC11 rotary encoder w/ push button (Taiss) | 1 | $1 |
+| Channel encoder | EC11 rotary encoder w/ push button (Taiss) | 1 | $1 |
+| Power switch | SS12F15 mini slide switch (SPDT) | 1 | $0.30 |
+| PTT button | Ulincos U16A1 16mm metal momentary, flush | 1 | $5 |
+| Speaker jack | 2.5mm TRS chassis mount (Calrad 30-714 or similar) | 1 | $2 |
+| Mic/PTT jack | 3.5mm TRS chassis mount w/ switch (CESS) | 1 | $2 |
+
+### Repeater Node (~$70)
+
+Same as handset minus microphone and speaker/amp.
+
 ## License
 
 TBD
