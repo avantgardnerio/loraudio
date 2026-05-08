@@ -26,7 +26,7 @@ board.add_jst_sh(cx, cy, pins=2, label="PA",
                  pad_labels=["+", "-"], pad_nets=[None, "GND"]); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="PTT",
                  pad_nets=[None, "GND"]); cx += step
-board.add_jst_ph(cx, cy, pins=2, label="PWR",
+board.add_jst_ph(cx, cy, pins=2, label="SW",
                  pad_nets=[None, None])
 
 # Board headers along bottom edge
