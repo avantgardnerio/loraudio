@@ -25,7 +25,7 @@ board.add_jst_ph(cx, cy, pins=2, label="BAT",
 board.add_jst_sh(cx, cy, pins=2, label="PA",
                  pad_labels=["+", "-"], pad_nets=["VSW", "GND"]); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="PTT",
-                 pad_nets=[None, "GND"]); cx += step
+                 pad_nets=["PTT", "GND"]); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="SW",
                  pad_nets=["VBAT", "VSW"])
 
@@ -49,7 +49,7 @@ board.add_header(BX + INSET + J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J2
                              "RST", "GPIO0", "GPIO36", "GPIO35", "GPIO34", "GPIO33",
                              "GPIO47", "GPIO48", "GPIO26", "GPIO21", "GPIO20", "GPIO19"],
                  pad_nets=["GND", None, None, None, None, None,
-                           None, None, None, None, None, None,
+                           None, "PTT", None, None, None, None,
                            None, None, None, None, None, None])
 
 # Board headers along bottom edge
