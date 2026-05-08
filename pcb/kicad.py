@@ -117,6 +117,11 @@ class Board:
         self._add_connector(f"JST_SH_B{pins}B", x, y, pins, 1.25, 1.0, 0.65,
                             label, angle, pad_labels, pad_nets)
 
+    def add_jst_zh(self, x, y, pins=2, label="", angle=0, pad_labels=None, pad_nets=None):
+        """Add a JST-ZH through-hole header (1.5mm pitch) at (x, y)."""
+        self._add_connector(f"JST_ZH_B{pins}B", x, y, pins, 1.5, 1.1, 0.7,
+                            label, angle, pad_labels, pad_nets)
+
     def add_header(self, x, y, pins, label="", angle=0, pad_labels=None, pad_nets=None, pitch=2.54):
         """Add a pin header (default 2.54mm pitch) at (x, y)."""
         self._add_connector(f"PinHeader_1x{pins}_P{pitch}mm", x, y, pins, pitch, 1.7, 1.0,

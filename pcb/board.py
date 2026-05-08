@@ -20,11 +20,11 @@ for x in (BX + INSET, BX + BW - INSET):
 
 # Connectors along top edge
 cx, cy = BX + 8, BY + 5
-board.add_jst_ph(cx, cy, pins=2, label="BAT",
+board.add_jst_sh(cx, cy, pins=2, label="BAT",
                  pad_labels=["+", "-"], pad_nets=["VBAT", "GND"]); cx += 7
 board.add_jst_ph(cx, cy, pins=2, label="SW",
                  pad_nets=["VBAT", "VSW"]); cx += 7
-board.add_jst_sh(cx, cy, pins=2, label="PA",
+board.add_jst_ph(cx, cy, pins=2, label="PA",
                  pad_labels=["+", "-"], pad_nets=["VSW", "GND"]); cx += 7
 board.add_jst_ph(cx, cy, pins=2, label="PTT",
                  pad_nets=["PTT", "GND"]); cx += 11
@@ -34,8 +34,8 @@ board.add_jst_ph(cx, cy, pins=4, label="VOL",
 board.add_jst_ph(cx, cy, pins=4, label="CHNL",
                  pad_labels=["A", "B", "SW", "GND"],
                  pad_nets=["CHNL_A", "CHNL_B", "CHNL_SW", "GND"]); cx += 7
-board.add_jst_ph(cx, cy, pins=2, label="SPK",
-                 pad_labels=["+", "-"], pad_nets=["SPK+", "SPK-"])
+board.add_jst_zh(cx, cy, pins=2, label="SPK",
+                 pad_labels=["-", "+"], pad_nets=["SPK-", "SPK+"])
 
 # Heltec V4 headers — two 18-pin rows
 J3_SPAN = 17 * 2.54  # 18 pins, 17 gaps
