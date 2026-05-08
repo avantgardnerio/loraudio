@@ -2,7 +2,7 @@
 
 
 class Board:
-    def __init__(self, paper="A4", thickness=1.6):
+    def __init__(self, paper="USLetter", thickness=1.6):
         self.paper = paper
         self.thickness = thickness
         self.layers = [
@@ -39,6 +39,17 @@ class Board:
             f"      (drill {drill})\n"
             f"      (layers *.Cu *.Mask){net_str}\n"
             f"    )"
+        )
+
+    def add_text(self, x, y, text, layer="F.SilkS", size=1, thickness=0.15, angle=0):
+        """Add a text string at (x, y) on the given layer."""
+        at_str = f"(at {x} {y})" if angle == 0 else f"(at {x} {y} {angle})"
+        self.graphics.append(
+            f'  (gr_text "{text}"\n'
+            f"    {at_str}\n"
+            f'    (layer "{layer}")\n'
+            f"    (effects (font (size {size} {size}) (thickness {thickness})))\n"
+            f"  )"
         )
 
     def add_rect(self, x, y, w, h, layer="Edge.Cuts", width=0.1):

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Generate the open-oswst PCB."""
 
+import subprocess
 from kicad import Board
 
 board = Board()
+git_sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
 
 # 70x50mm landscape, centered on A4 (297x210mm)
 BX, BY = 113, 113  # board origin
@@ -69,6 +71,9 @@ board.add_header(AMP_X, AMP_Y, pins=7, label="AMP", angle=180,
                  pad_nets=["3V3", "GND", None, None, "DIN", "BCLK", "LRC"])
 board.add_header(AMP_X, AMP_Y - 12.954, pins=2, label="AMP_SPK", angle=180,
                  pitch=3.5, pad_labels=["+", "-"], pad_nets=["SPK+", "SPK-"])
+
+# Silkscreen — project name and git SHA
+board.add_text(BX + BW / 2, BY + BH - 2, f"open-oswst  {git_sha}", size=0.8, thickness=0.12)
 
 # Ground plane — GND zone covering full board, both copper layers
 board.add_zone("GND", [

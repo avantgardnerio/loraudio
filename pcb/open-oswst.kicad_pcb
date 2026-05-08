@@ -6,7 +6,7 @@
     (thickness 1.6)
     (legacy_teardrops no)
   )
-  (paper "A4")
+  (paper "USLetter")
   (layers
     (0 "F.Cu" signal)
     (31 "B.Cu" signal)
@@ -48,6 +48,11 @@
   )
 
   (gr_rect (start 113 113) (end 183 163) (stroke (width 0.1) (type solid)) (fill none) (layer "Edge.Cuts"))
+  (gr_text "open-oswst  6aa8376"
+    (at 148.0 161)
+    (layer "F.SilkS")
+    (effects (font (size 0.8 0.8) (thickness 0.12)))
+  )
 
   (footprint "MountingHole_2.2mm"
     (layer "F.Cu")
