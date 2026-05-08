@@ -1,6 +1,6 @@
 (kicad_pcb
   (version 20240108)
-  (generator "gen_kicad_project.py")
+  (generator "kicad.py")
   (generator_version "8.0")
   (general
     (thickness 1.6)
