@@ -22,12 +22,12 @@ for x in (BX + INSET, BX + BW - INSET):
 cx, cy = BX + 8, BY + 5
 board.add_jst_ph(cx, cy, pins=2, label="BAT",
                  pad_labels=["+", "-"], pad_nets=["VBAT", "GND"]); cx += 7
+board.add_jst_ph(cx, cy, pins=2, label="SW",
+                 pad_nets=["VBAT", "VSW"]); cx += 7
 board.add_jst_sh(cx, cy, pins=2, label="PA",
                  pad_labels=["+", "-"], pad_nets=["VSW", "GND"]); cx += 7
 board.add_jst_ph(cx, cy, pins=2, label="PTT",
-                 pad_nets=["PTT", "GND"]); cx += 7
-board.add_jst_ph(cx, cy, pins=2, label="SW",
-                 pad_nets=["VBAT", "VSW"]); cx += 11
+                 pad_nets=["PTT", "GND"]); cx += 11
 board.add_jst_ph(cx, cy, pins=4, label="VOL",
                  pad_labels=["A", "B", "SW", "GND"],
                  pad_nets=["VOL_A", "VOL_B", "VOL_SW", "GND"]); cx += 12
