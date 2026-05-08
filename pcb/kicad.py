@@ -15,6 +15,28 @@ class Board:
         self.graphics = []
         self.footprints = []
         self._fp_id = 0
+        self._nets = {"": 0}  # net name → net number (0 = unconnected)
+
+    def _net(self, name):
+        """Get or create a net number for the given net name."""
+        if name not in self._nets:
+            self._nets[name] = len(self._nets)
+        return self._nets[name]
+
+    def _pad_thru(self, name, x, y, size, drill, net=None):
+        """Generate a through-hole circle pad string."""
+        net_str = ""
+        if net:
+            n = self._net(net)
+            net_str = f"\n      (net {n} \"{net}\")"
+        return (
+            f'    (pad "{name}" thru_hole circle\n'
+            f"      (at {x} {y})\n"
+            f"      (size {size} {size})\n"
+            f"      (drill {drill})\n"
+            f"      (layers *.Cu *.Mask){net_str}\n"
+            f"    )"
+        )
 
     def add_rect(self, x, y, w, h, layer="Edge.Cuts", width=0.1):
         self.graphics.append(
@@ -32,7 +54,7 @@ class Board:
             f'    (layer "F.Cu")\n'
             f"    (at {x} {y})\n"
             f'    (attr exclude_from_pos_files exclude_from_bom)\n'
-            f'    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide\n'
+            f'    (fp_text reference "H{self._fp_id}" (at 0 0) (layer "F.SilkS") hide\n'
             f"      (effects (font (size 1 1) (thickness 0.15)))\n"
             f"    )\n"
             f'    (pad "" np_thru_hole circle\n'
@@ -44,37 +66,24 @@ class Board:
             f"  )"
         )
 
-    def add_jst_ph(self, x, y, pins=2, label="", angle=0, pad_labels=None):
-        """Add a JST-PH through-hole header (2.0mm pitch) at (x, y).
-
-        Pads are numbered 1..pins, spaced 2.0mm apart, centered on (x, y).
-        Through-hole pins with 0.8mm drill, 1.5mm annular pad.
-        pad_labels: optional list of strings to label each pad (e.g. ["+", "-"]).
-        """
+    def _add_connector(self, footprint_name, x, y, pins, pitch, pad_size, drill,
+                        label="", angle=0, pad_labels=None, pad_nets=None):
+        """Generic through-hole connector footprint."""
         self._fp_id += 1
-        pitch = 2.0
-        pad_size = 1.5
-        drill = 0.8
         half_span = pitch * (pins - 1) / 2
 
         pad_lines = []
         for i in range(pins):
             px = -half_span + i * pitch
             pad_name = pad_labels[i] if pad_labels and i < len(pad_labels) else str(i + 1)
-            pad_lines.append(
-                f'    (pad "{pad_name}" thru_hole circle\n'
-                f"      (at {px} 0)\n"
-                f"      (size {pad_size} {pad_size})\n"
-                f"      (drill {drill})\n"
-                f"      (layers *.Cu *.Mask)\n"
-                f"    )"
-            )
+            net = pad_nets[i] if pad_nets and i < len(pad_nets) else None
+            pad_lines.append(self._pad_thru(pad_name, px, 0, pad_size, drill, net))
 
         pads = "\n".join(pad_lines)
         ref_text = label or f"J{self._fp_id}"
         at_str = f"(at {x} {y})" if angle == 0 else f"(at {x} {y} {angle})"
         self.footprints.append(
-            f'  (footprint "JST_PH_B{pins}B"\n'
+            f'  (footprint "{footprint_name}"\n'
             f'    (layer "F.Cu")\n'
             f"    {at_str}\n"
             f'    (fp_text reference "{ref_text}" (at 0 -2.5) (layer "F.SilkS")\n'
@@ -84,74 +93,20 @@ class Board:
             f"  )"
         )
 
-    def add_jst_sh(self, x, y, pins=2, label="", angle=0, pad_labels=None):
+    def add_jst_ph(self, x, y, pins=2, label="", angle=0, pad_labels=None, pad_nets=None):
+        """Add a JST-PH through-hole header (2.0mm pitch) at (x, y)."""
+        self._add_connector(f"JST_PH_B{pins}B", x, y, pins, 2.0, 1.5, 0.8,
+                            label, angle, pad_labels, pad_nets)
+
+    def add_jst_sh(self, x, y, pins=2, label="", angle=0, pad_labels=None, pad_nets=None):
         """Add a JST-SH through-hole header (1.25mm pitch) at (x, y)."""
-        self._fp_id += 1
-        pitch = 1.25
-        pad_size = 1.0
-        drill = 0.65
-        half_span = pitch * (pins - 1) / 2
+        self._add_connector(f"JST_SH_B{pins}B", x, y, pins, 1.25, 1.0, 0.65,
+                            label, angle, pad_labels, pad_nets)
 
-        pad_lines = []
-        for i in range(pins):
-            px = -half_span + i * pitch
-            pad_name = pad_labels[i] if pad_labels and i < len(pad_labels) else str(i + 1)
-            pad_lines.append(
-                f'    (pad "{pad_name}" thru_hole circle\n'
-                f"      (at {px} 0)\n"
-                f"      (size {pad_size} {pad_size})\n"
-                f"      (drill {drill})\n"
-                f"      (layers *.Cu *.Mask)\n"
-                f"    )"
-            )
-
-        pads = "\n".join(pad_lines)
-        ref_text = label or f"J{self._fp_id}"
-        at_str = f"(at {x} {y})" if angle == 0 else f"(at {x} {y} {angle})"
-        self.footprints.append(
-            f'  (footprint "JST_SH_B{pins}B"\n'
-            f'    (layer "F.Cu")\n'
-            f"    {at_str}\n"
-            f'    (fp_text reference "{ref_text}" (at 0 -2.5) (layer "F.SilkS")\n'
-            f"      (effects (font (size 1 1) (thickness 0.15)))\n"
-            f"    )\n"
-            f"{pads}\n"
-            f"  )"
-        )
-
-    def add_header(self, x, y, pins, label="", angle=0, pad_labels=None, pitch=2.54):
+    def add_header(self, x, y, pins, label="", angle=0, pad_labels=None, pad_nets=None, pitch=2.54):
         """Add a pin header (default 2.54mm pitch) at (x, y)."""
-        self._fp_id += 1
-        pad_size = 1.7
-        drill = 1.0
-        half_span = pitch * (pins - 1) / 2
-
-        pad_lines = []
-        for i in range(pins):
-            px = -half_span + i * pitch
-            pad_name = pad_labels[i] if pad_labels and i < len(pad_labels) else str(i + 1)
-            pad_lines.append(
-                f'    (pad "{pad_name}" thru_hole circle\n'
-                f"      (at {px} 0)\n"
-                f"      (size {pad_size} {pad_size})\n"
-                f"      (drill {drill})\n"
-                f"      (layers *.Cu *.Mask)\n"
-                f"    )"
-            )
-
-        pads = "\n".join(pad_lines)
-        ref_text = label or f"J{self._fp_id}"
-        at_str = f"(at {x} {y})" if angle == 0 else f"(at {x} {y} {angle})"
-        self.footprints.append(
-            f'  (footprint "PinHeader_1x{pins}_P{pitch}mm"\n'
-            f'    (layer "F.Cu")\n'
-            f"    {at_str}\n"
-            f'    (fp_text reference "{ref_text}" (at 0 -2.5) (layer "F.SilkS")\n'
-            f"      (effects (font (size 1 1) (thickness 0.15)))\n"
-            f"    )\n"
-            f"{pads}\n"
-            f"  )"
-        )
+        self._add_connector(f"PinHeader_1x{pins}_P{pitch}mm", x, y, pins, pitch, 1.7, 1.0,
+                            label, angle, pad_labels, pad_nets)
 
     def _render_layers(self):
         lines = []
@@ -160,6 +115,12 @@ class Board:
                 lines.append(f'    ({num} "{name}" {kind} "{alias}")')
             else:
                 lines.append(f'    ({num} "{name}" {kind})')
+        return "\n".join(lines)
+
+    def _render_nets(self):
+        lines = []
+        for name, num in sorted(self._nets.items(), key=lambda x: x[1]):
+            lines.append(f'  (net {num} "{name}")')
         return "\n".join(lines)
 
     def render(self):
@@ -185,7 +146,7 @@ class Board:
             f"  (setup\n"
             f"    (pad_to_mask_clearance 0)\n"
             f"  )\n"
-            f'  (net 0 "")'
+            f"{self._render_nets()}"
             f"{gfx}\n"
             f")\n"
         )

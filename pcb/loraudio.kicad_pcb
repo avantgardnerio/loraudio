@@ -18,6 +18,15 @@
     (pad_to_mask_clearance 0)
   )
   (net 0 "")
+  (net 1 "SPK+")
+  (net 2 "GND")
+  (net 3 "VBAT")
+  (net 4 "PTT")
+  (net 5 "PWR_SW")
+  (net 6 "MIC_OUT")
+  (net 7 "I2S_DIN")
+  (net 8 "I2S_BCLK")
+  (net 9 "I2S_LRC")
 
   (gr_rect (start 113 113) (end 183 163) (stroke (width 0.1) (type solid)) (fill none) (layer "Edge.Cuts"))
 
@@ -25,7 +34,7 @@
     (layer "F.Cu")
     (at 116 116)
     (attr exclude_from_pos_files exclude_from_bom)
-    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide
+    (fp_text reference "H1" (at 0 0) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
     )
     (pad "" np_thru_hole circle
@@ -39,7 +48,7 @@
     (layer "F.Cu")
     (at 116 160)
     (attr exclude_from_pos_files exclude_from_bom)
-    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide
+    (fp_text reference "H2" (at 0 0) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
     )
     (pad "" np_thru_hole circle
@@ -53,7 +62,7 @@
     (layer "F.Cu")
     (at 180 116)
     (attr exclude_from_pos_files exclude_from_bom)
-    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide
+    (fp_text reference "H3" (at 0 0) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
     )
     (pad "" np_thru_hole circle
@@ -67,7 +76,7 @@
     (layer "F.Cu")
     (at 180 160)
     (attr exclude_from_pos_files exclude_from_bom)
-    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide
+    (fp_text reference "H4" (at 0 0) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
     )
     (pad "" np_thru_hole circle
@@ -88,12 +97,14 @@
       (size 1.5 1.5)
       (drill 0.8)
       (layers *.Cu *.Mask)
+      (net 1 "SPK+")
     )
     (pad "-" thru_hole circle
       (at 1.0 0)
       (size 1.5 1.5)
       (drill 0.8)
       (layers *.Cu *.Mask)
+      (net 2 "GND")
     )
   )
   (footprint "JST_PH_B2B"
@@ -107,12 +118,14 @@
       (size 1.5 1.5)
       (drill 0.8)
       (layers *.Cu *.Mask)
+      (net 3 "VBAT")
     )
     (pad "-" thru_hole circle
       (at 1.0 0)
       (size 1.5 1.5)
       (drill 0.8)
       (layers *.Cu *.Mask)
+      (net 2 "GND")
     )
   )
   (footprint "JST_SH_B2B"
@@ -126,12 +139,14 @@
       (size 1.0 1.0)
       (drill 0.65)
       (layers *.Cu *.Mask)
+      (net 3 "VBAT")
     )
     (pad "-" thru_hole circle
       (at 0.625 0)
       (size 1.0 1.0)
       (drill 0.65)
       (layers *.Cu *.Mask)
+      (net 2 "GND")
     )
   )
   (footprint "JST_PH_B2B"
@@ -145,12 +160,14 @@
       (size 1.5 1.5)
       (drill 0.8)
       (layers *.Cu *.Mask)
+      (net 4 "PTT")
     )
     (pad "2" thru_hole circle
       (at 1.0 0)
       (size 1.5 1.5)
       (drill 0.8)
       (layers *.Cu *.Mask)
+      (net 2 "GND")
     )
   )
   (footprint "JST_PH_B2B"
@@ -164,12 +181,14 @@
       (size 1.5 1.5)
       (drill 0.8)
       (layers *.Cu *.Mask)
+      (net 3 "VBAT")
     )
     (pad "2" thru_hole circle
       (at 1.0 0)
       (size 1.5 1.5)
       (drill 0.8)
       (layers *.Cu *.Mask)
+      (net 5 "PWR_SW")
     )
   )
   (footprint "PinHeader_1x5_P2.54mm"
@@ -183,18 +202,21 @@
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 6 "MIC_OUT")
     )
     (pad "GND" thru_hole circle
       (at -2.54 0)
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 2 "GND")
     )
     (pad "VDD" thru_hole circle
       (at 0.0 0)
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 3 "VBAT")
     )
     (pad "AR" thru_hole circle
       (at 2.54 0)
@@ -220,12 +242,14 @@
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 3 "VBAT")
     )
     (pad "GND" thru_hole circle
       (at -5.08 0)
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 2 "GND")
     )
     (pad "SD" thru_hole circle
       (at -2.54 0)
@@ -244,18 +268,21 @@
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 7 "I2S_DIN")
     )
     (pad "BCLK" thru_hole circle
       (at 5.079999999999999 0)
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 8 "I2S_BCLK")
     )
     (pad "LRC" thru_hole circle
       (at 7.62 0)
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 9 "I2S_LRC")
     )
   )
 )
