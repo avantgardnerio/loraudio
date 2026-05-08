@@ -153,28 +153,23 @@ build.rs             # Links defmt-discard.x
 
 ## Bill of Materials
 
-### Handset (~$88)
+### Handset (~$122)
 
-| Component | Part | Qty | Est. Cost |
-|-----------|------|-----|-----------|
-| MCU + LoRa + GPS | Heltec WiFi LoRa 32 V4 | 1 | $40 |
-| RF amplifier | AB-IOT-868 "Air Buddy" (902-928 MHz, bidirectional TX+LNA) | 1 | $25 |
-| Speaker amp | MAX98357A I2S Class D breakout | 1 | $5 |
-| Speaker | 8 ohm 1W mini (JST-PH1.25mm) | 1 | $2 |
-| Microphone | MAX9814 electret with AGC (analog out) | 1 | $3 |
-| Antenna | 5 dBi SMA whip (915 MHz) | 1 | $10 |
-| Battery | 3.7V 2000mAh LiPo (JST 1.25) | 1 | $5 |
-| Adapter | U.FL-to-SMA pigtail + SMA F-F barrel coupler | 1 | $3 |
-| Volume encoder | EC11 rotary encoder w/ push button (Taiss) | 1 | $1 |
-| Channel encoder | EC11 rotary encoder w/ push button (Taiss) | 1 | $1 |
-| Power switch | SS12F15 mini slide switch (SPDT) | 1 | $0.30 |
-| PTT button | Ulincos U16A1 16mm metal momentary, flush | 1 | $5 |
-| Speaker jack | 2.5mm TRS chassis mount (Calrad 30-714 or similar) | 1 | $2 |
-| Mic/PTT jack | 3.5mm TRS chassis mount w/ switch (CESS) | 1 | $2 |
-
-### Repeater Node (~$70)
-
-Same as handset minus microphone and speaker/amp.
+| Component                                                                                       | Part                                                       | Qty | Est. Cost |
+|-------------------------------------------------------------------------------------------------|------------------------------------------------------------|-----|-----------|
+| [MCU + LoRa + GPS](https://www.amazon.com/dp/B0GCD9W6JZ?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) | Heltec WiFi LoRa 32 V4                                     | 1   | $42       |
+| [RF amplifier](https://www.amazon.com/dp/B0DQBJVR91?ref=ppx_yo2ov_dt_b_fed_asin_title)          | AB-IOT-868 "Air Buddy" (902-928 MHz, bidirectional TX+LNA) | 1   | $26       |
+| [Speaker amp](https://www.amazon.com/dp/B0DPJRLMDJ?ref=ppx_yo2ov_dt_b_fed_asin_title)           | MAX98357A I2S Class D breakout                             | 1   | $3        |
+| [Speaker](https://www.amazon.com/dp/B0BTP67F81?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1)          | 8 ohm 1W mini (JST-PH1.25mm)                               | 1   | $2.50     |
+| [Microphone](https://www.amazon.com/dp/B0B7SP6GYX?ref=ppx_yo2ov_dt_b_fed_asin_title)            | MAX9814 electret with AGC (analog out)                     | 1   | $4        |
+| [Antenna](https://www.amazon.com/dp/B0D47HVCK7?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1)          | 5 dBi SMA whip (915 MHz)                                   | 1   | $6        |
+| [Battery](https://www.amazon.com/dp/B0FPCWFFYB?ref=ppx_yo2ov_dt_b_fed_asin_title)               | YELUFT 1S 103450 3.7V 2000mAh LiPo (JST 1.25)              | 1   | $24       |
+| [encoder](https://www.amazon.com/dp/B07F24TRYG?ref=ppx_yo2ov_dt_b_fed_asin_title)               | EC11 rotary encoder w/ push button (Taiss)                 | 2   | $1.25     |
+| [Power switch](https://www.amazon.com/dp/B0DN69L9SG?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1)     | SS12F15 mini slide switch (SPDT)                           | 1   | $0.30     |
+| [PTT button](https://www.amazon.com/dp/B015X34IP6?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1)       | Ulincos U16A1 16mm metal momentary, flush                  | 1   | $8        |
+| [Speaker jack](https://www.amazon.com/dp/B01ASF0LW8?ref=ppx_yo2ov_dt_b_fed_asin_title)          | 2.5mm TRS chassis mount (Calrad 30-714 or similar)         | 1   | $0.66     |
+| [Mic/PTT jack](https://www.amazon.com/dp/B00ZYWJ1DG?ref=ppx_yo2ov_dt_b_fed_asin_title)          | 3.5mm TRS chassis mount w/ switch (CESS)                   | 1   | $2        |
+| [F2F SMA](https://www.amazon.com/dp/B0FB3R5WRL?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1)          | Female to Female SMA                                       | 1 | $1        |
 
 ## License
 

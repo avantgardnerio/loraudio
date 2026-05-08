@@ -61,7 +61,7 @@ AMP_Y = BY + BH - INSET - 5
 board.add_header(AMP_X, AMP_Y, pins=7, label="AMP", angle=180,
                  pad_labels=["Vin", "GND", "SD", "GAIN", "DIN", "BCLK", "LRC"],
                  pad_nets=["3V3", "GND", None, None, "DIN", "BCLK", "LRC"])
-board.add_header(AMP_X, AMP_Y - 11.7, pins=2, label="AMP_SPK", angle=180,
-                 pad_labels=["+", "-"], pad_nets=["SPK+", "SPK-"])
+board.add_header(AMP_X, AMP_Y - 12.954, pins=2, label="AMP_SPK", angle=180,
+                 pitch=3.5, pad_labels=["+", "-"], pad_nets=["SPK+", "SPK-"])
 
 board.save("loraudio.kicad_pcb")
