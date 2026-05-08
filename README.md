@@ -2,7 +2,7 @@
 
 Stealth LoRa radio mesh where the primary design principle is "only speak when spoken to".
 
-![Two open-oswst radios in simplex voice mode](docs/simplex-duo.jpg)
+![open-oswst radio in 3d printed case](docs/in-case.jpg)
 
 ## Hardware
 
