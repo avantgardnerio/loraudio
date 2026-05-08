@@ -18,8 +18,6 @@ for x in (BX + INSET, BX + BW - INSET):
 
 # Connectors along top edge
 cx, cy, step = BX + 14, BY + 5, 8
-board.add_jst_ph(cx, cy, pins=2, label="SPK",
-                 pad_labels=["+", "-"], pad_nets=[None, None]); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="BAT",
                  pad_labels=["+", "-"], pad_nets=["VBAT", "GND"]); cx += step
 board.add_jst_sh(cx, cy, pins=2, label="PA",
@@ -27,7 +25,9 @@ board.add_jst_sh(cx, cy, pins=2, label="PA",
 board.add_jst_ph(cx, cy, pins=2, label="PTT",
                  pad_nets=["PTT", "GND"]); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="SW",
-                 pad_nets=["VBAT", "VSW"])
+                 pad_nets=["VBAT", "VSW"]); cx += step
+board.add_jst_ph(cx, cy, pins=2, label="SPK",
+                 pad_labels=["+", "-"], pad_nets=["SPK+", "SPK-"])
 
 # Heltec V4 headers — two 18-pin rows
 J3_SPAN = 17 * 2.54  # 18 pins, 17 gaps
@@ -56,8 +56,12 @@ board.add_header(BX + INSET + J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J2
 board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
                  pad_labels=["OUT", "GND", "VDD", "AR", "GAIN"],
                  pad_nets=["MIC_OUT", "GND", "3V3", None, None])
-board.add_header(BX + 15, BY + BH - 5, pins=7, label="AMP",
+AMP_X = BX + BW - INSET - 3 * 2.54
+AMP_Y = BY + BH - INSET - 5
+board.add_header(AMP_X, AMP_Y, pins=7, label="AMP", angle=180,
                  pad_labels=["Vin", "GND", "SD", "GAIN", "DIN", "BCLK", "LRC"],
                  pad_nets=["3V3", "GND", None, None, "DIN", "BCLK", "LRC"])
+board.add_header(AMP_X, AMP_Y - 11.7, pins=2, label="AMP_SPK", angle=180,
+                 pad_labels=["+", "-"], pad_nets=["SPK+", "SPK-"])
 
 board.save("loraudio.kicad_pcb")
