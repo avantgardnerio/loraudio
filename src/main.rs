@@ -57,7 +57,7 @@ fn get_mac() -> [u8; 6] {
 fn main() {
     esp_idf_svc::sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default();
-    log::info!("Loraudio starting...");
+    log::info!("open-oswst starting...");
 
     let peripherals = Peripherals::take().unwrap();
 
@@ -67,7 +67,7 @@ fn main() {
     thread::sleep(Duration::from_millis(50));
 
     // Read config from dedicated NVS partition
-    let nvs_partition = EspCustomNvsPartition::take("loraudio").unwrap();
+    let nvs_partition = EspCustomNvsPartition::take("open-oswst").unwrap();
     let nvs = EspNvs::new(nvs_partition, "config", false).unwrap();
     let repeater = nvs.get_u8("repeater").unwrap().unwrap_or(0) != 0;
     IS_REPEATER.store(repeater, std::sync::atomic::Ordering::Relaxed);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the loraudio PCB."""
+"""Generate the open-oswst PCB."""
 
 from kicad import Board
 
@@ -69,4 +69,4 @@ board.add_zone("GND", [
     (BX, BY), (BX + BW, BY), (BX + BW, BY + BH), (BX, BY + BH),
 ], clearance=0.25)
 
-board.save("loraudio.kicad_pcb")
+board.save("open-oswst.kicad_pcb")

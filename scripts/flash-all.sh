@@ -4,7 +4,7 @@
 
 set -e
 
-BIN="target/xtensa-esp32s3-espidf/debug/loraudio"
+BIN="target/xtensa-esp32s3-espidf/debug/open-oswst"
 PTABLE="target/xtensa-esp32s3-espidf/debug/partition-table.bin"
 
 if [[ ! -f "$BIN" || ! -f "$PTABLE" ]]; then

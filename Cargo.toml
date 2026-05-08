@@ -1,5 +1,5 @@
 [package]
-name = "loraudio"
+name = "open-oswst"
 version = "0.1.0"
 authors = ["Brent Gardner <bgardner@squarelabs.net>"]
 edition = "2021"
@@ -7,7 +7,7 @@ resolver = "2"
 rust-version = "1.82"
 
 [[bin]]
-name = "loraudio"
+name = "open-oswst"
 harness = false # do not use the built-in cargo test harness -> resolve rust-analyzer errors
 
 [profile.release]

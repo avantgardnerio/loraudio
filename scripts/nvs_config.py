@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read NVS, merge in loraudio config keys, and optionally flash back.
+"""Read NVS, merge in open-oswst config keys, and optionally flash back.
 
 Usage:
     # Generate from local backup, save to file:
@@ -36,7 +36,7 @@ NVS_GEN = os.path.join(
 
 NVS_OFFSET = 0x9000
 NVS_SIZE = 0x6000
-NAMESPACE = "loraudio"
+NAMESPACE = "open-oswst"
 
 # Map nvs_tool encoding names to nvs_partition_gen CSV types
 ENCODING_MAP = {
@@ -120,7 +120,7 @@ def entries_to_csv(entries, our_keys, tmpdir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Configure loraudio NVS")
+    parser = argparse.ArgumentParser(description="Configure open-oswst NVS")
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("-p", "--port", help="Serial port to read NVS from")
     source.add_argument("-i", "--input", help="Local NVS binary to read from")

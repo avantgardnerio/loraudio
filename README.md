@@ -72,19 +72,19 @@ ESP-IDF v5.5.x is downloaded automatically by `esp-idf-sys` on first build (take
 
 ### Flash
 
-The firmware uses a custom partition table with a dedicated `loraudio` NVS partition for device config. Since `espflash flash` overwrites the partition table with its own, you must re-write ours after flashing:
+The firmware uses a custom partition table with a dedicated `open-oswst` NVS partition for device config. Since `espflash flash` overwrites the partition table with its own, you must re-write ours after flashing:
 
 ```bash
 . ~/export-esp.sh
 
 # 1. Flash firmware
-espflash flash -p /dev/ttyACM0 target/xtensa-esp32s3-espidf/debug/loraudio
+espflash flash -p /dev/ttyACM0 target/xtensa-esp32s3-espidf/debug/open-oswst
 
 # 2. Overwrite partition table with ours (espflash clobbers it in step 1)
 espflash write-bin -p /dev/ttyACM0 0x8000 target/xtensa-esp32s3-espidf/debug/partition-table.bin
 
 # 3. Write device config (only needed on first flash or to change config)
-espflash write-bin -p /dev/ttyACM0 0xfad000 ~/phy/loraudio_nvs.bin
+espflash write-bin -p /dev/ttyACM0 0xfad000 ~/phy/open-oswst_nvs.bin
 ```
 
 Monitor separately:
@@ -95,17 +95,17 @@ picocom /dev/ttyACM0 -b 115200
 
 ### Device Config (NVS)
 
-Device configuration lives in a dedicated `loraudio` NVS partition at `0xfad000` (12KB), separate from the system NVS (PHY cal, WiFi, etc).
+Device configuration lives in a dedicated `open-oswst` NVS partition at `0xfad000` (12KB), separate from the system NVS (PHY cal, WiFi, etc).
 
-Generate a config image from `nvs_loraudio.csv`:
+Generate a config image from `nvs_open-oswst.csv`:
 
 ```bash
-# Generate NVS image (edit nvs_loraudio.csv to change values)
+# Generate NVS image (edit nvs_open-oswst.csv to change values)
 python3 .embuild/espressif/python_env/idf5.5_py3.13_env/lib/python3.13/site-packages/esp_idf_nvs_partition_gen/nvs_partition_gen.py \
-    generate nvs_loraudio.csv ~/phy/loraudio_nvs.bin 0x3000
+    generate nvs_open-oswst.csv ~/phy/open-oswst_nvs.bin 0x3000
 
 # Flash to board
-espflash write-bin -p /dev/ttyACM0 0xfad000 ~/phy/loraudio_nvs.bin
+espflash write-bin -p /dev/ttyACM0 0xfad000 ~/phy/open-oswst_nvs.bin
 ```
 
 Current config keys (namespace `config`):
@@ -142,8 +142,8 @@ There is also `nvs_config.py` for read-modify-write of the *system* NVS partitio
 src/main.rs          # Entry point, channels, NVS config read
 src/radio.rs         # SPI + LoRa init, IRQ-driven RX/TX loop, CSMA
 src/app.rs           # PTT, ADC, OLED, Codec2, I2S speaker
-partitions.csv       # Custom partition table (adds loraudio NVS)
-nvs_loraudio.csv     # Default device config values
+partitions.csv       # Custom partition table (adds open-oswst NVS)
+nvs_open-oswst.csv     # Default device config values
 nvs_config.py        # Tool for read-modify-write of system NVS
 sdkconfig.defaults   # ESP-IDF config overrides
 defmt-discard.x      # Linker script to discard defmt sections
