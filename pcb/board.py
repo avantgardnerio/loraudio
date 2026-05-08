@@ -29,6 +29,16 @@ board.add_jst_ph(cx, cy, pins=2, label="PTT",
 board.add_jst_ph(cx, cy, pins=2, label="SW",
                  pad_nets=[None, None])
 
+# Heltec V4 J3 header (left side, pin 18→1 top to bottom)
+J3_SPAN = 17 * 2.54  # 18 pins, 17 gaps
+board.add_header(BX + INSET + J3_SPAN / 2, BY + BH / 2, pins=18, label="J3",
+                 pad_labels=["GND", "3V3b", "3V3a", "GPIO37", "GPIO46", "GPIO45",
+                             "GPIO42", "GPIO41", "GPIO40", "GPIO39", "GPIO38", "GPIO1",
+                             "GPIO2", "GPIO3", "GPIO4", "GPIO5", "GPIO6", "GPIO7"],
+                 pad_nets=["GND", None, None, None, None, None,
+                           None, None, None, None, None, None,
+                           None, None, None, None, None, None])
+
 # Board headers along bottom edge
 board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
                  pad_labels=["OUT", "GND", "VDD", "AR", "GAIN"],
