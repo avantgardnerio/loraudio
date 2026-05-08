@@ -16,6 +16,7 @@ class Board:
         ]
         self.graphics = []
         self.footprints = []
+        self.zones = []
         self._fp_id = 0
         self._nets = {"": 0}  # net name → net number (0 = unconnected)
 
@@ -110,6 +111,35 @@ class Board:
         self._add_connector(f"PinHeader_1x{pins}_P{pitch}mm", x, y, pins, pitch, 1.7, 1.0,
                             label, angle, pad_labels, pad_nets)
 
+    def add_zone(self, net, points, layers=("F.Cu", "B.Cu"), clearance=0.5,
+                 min_thickness=0.25, thermal_gap=0.5, thermal_bridge_width=0.5):
+        """Add a copper zone (e.g. ground plane). Points are (x,y) tuples defining the outline."""
+        n = self._net(net)
+        layer_str = " ".join(f'"{l}"' for l in layers)
+        pts = " ".join(f"(xy {x} {y})" for x, y in points)
+        self.zones.append(
+            f'  (zone\n'
+            f'    (net {n})\n'
+            f'    (net_name "{net}")\n'
+            f'    (layers {layer_str})\n'
+            f'    (hatch edge 0.5)\n'
+            f'    (connect_pads\n'
+            f'      (clearance {clearance})\n'
+            f'    )\n'
+            f'    (min_thickness {min_thickness})\n'
+            f'    (filled_areas_thickness no)\n'
+            f'    (fill yes\n'
+            f'      (thermal_gap {thermal_gap})\n'
+            f'      (thermal_bridge_width {thermal_bridge_width})\n'
+            f'    )\n'
+            f'    (polygon\n'
+            f'      (pts\n'
+            f'        {pts}\n'
+            f'      )\n'
+            f'    )\n'
+            f'  )'
+        )
+
     def _render_layers(self):
         lines = []
         for num, name, kind, alias in self.layers:
@@ -131,6 +161,8 @@ class Board:
             parts.append("\n".join(self.graphics))
         if self.footprints:
             parts.append("\n".join(self.footprints))
+        if self.zones:
+            parts.append("\n".join(self.zones))
         gfx = "\n\n" + "\n\n".join(parts) if parts else ""
         return (
             f"(kicad_pcb\n"

@@ -558,4 +558,25 @@
       (net 6 "SPK-")
     )
   )
+
+  (zone
+    (net 2)
+    (net_name "GND")
+    (layers "F.Cu" "B.Cu")
+    (hatch edge 0.5)
+    (connect_pads
+      (clearance 0.5)
+    )
+    (min_thickness 0.25)
+    (filled_areas_thickness no)
+    (fill yes
+      (thermal_gap 0.5)
+      (thermal_bridge_width 0.5)
+    )
+    (polygon
+      (pts
+        (xy 113 113) (xy 183 113) (xy 183 163) (xy 113 163)
+      )
+    )
+  )
 )
