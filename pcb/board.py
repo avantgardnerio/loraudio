@@ -24,4 +24,8 @@ board.add_jst_sh(cx, cy, pins=2, label="PA", pad_labels=["+", "-"]); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="PTT"); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="PWR")
 
+# Mic board header (MAX9814, 5-pin 2.54mm) centered on bottom edge
+board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
+                 pad_labels=["OUT", "GND", "VDD", "AR", "GAIN"])
+
 board.save("loraudio.kicad_pcb")

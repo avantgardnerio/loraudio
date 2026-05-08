@@ -119,6 +119,40 @@ class Board:
             f"  )"
         )
 
+    def add_header(self, x, y, pins, label="", angle=0, pad_labels=None, pitch=2.54):
+        """Add a pin header (default 2.54mm pitch) at (x, y)."""
+        self._fp_id += 1
+        pad_size = 1.7
+        drill = 1.0
+        half_span = pitch * (pins - 1) / 2
+
+        pad_lines = []
+        for i in range(pins):
+            px = -half_span + i * pitch
+            pad_name = pad_labels[i] if pad_labels and i < len(pad_labels) else str(i + 1)
+            pad_lines.append(
+                f'    (pad "{pad_name}" thru_hole circle\n'
+                f"      (at {px} 0)\n"
+                f"      (size {pad_size} {pad_size})\n"
+                f"      (drill {drill})\n"
+                f"      (layers *.Cu *.Mask)\n"
+                f"    )"
+            )
+
+        pads = "\n".join(pad_lines)
+        ref_text = label or f"J{self._fp_id}"
+        at_str = f"(at {x} {y})" if angle == 0 else f"(at {x} {y} {angle})"
+        self.footprints.append(
+            f'  (footprint "PinHeader_1x{pins}_P{pitch}mm"\n'
+            f'    (layer "F.Cu")\n'
+            f"    {at_str}\n"
+            f'    (fp_text reference "{ref_text}" (at 0 -2.5) (layer "F.SilkS")\n'
+            f"      (effects (font (size 1 1) (thickness 0.15)))\n"
+            f"    )\n"
+            f"{pads}\n"
+            f"  )"
+        )
+
     def _render_layers(self):
         lines = []
         for num, name, kind, alias in self.layers:
