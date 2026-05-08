@@ -38,7 +38,7 @@ board.add_header(BX + INSET + J3_SPAN / 2, HY, pins=18, label="J3",
                  pad_labels=["GND", "3V3b", "3V3a", "GPIO37", "GPIO46", "GPIO45",
                              "GPIO42", "GPIO41", "GPIO40", "GPIO39", "GPIO38", "GPIO1",
                              "GPIO2", "GPIO3", "GPIO4", "GPIO5", "GPIO6", "GPIO7"],
-                 pad_nets=["GND", "VSW", None, None, None, None,
+                 pad_nets=["GND", "VSW", "3V3", None, None, None,
                            None, None, None, None, None, None,
                            None, None, None, None, None, None])
 
@@ -55,9 +55,9 @@ board.add_header(BX + INSET + J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J2
 # Board headers along bottom edge
 board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
                  pad_labels=["OUT", "GND", "VDD", "AR", "GAIN"],
-                 pad_nets=[None, "GND", None, None, None])
+                 pad_nets=[None, "GND", "3V3", None, None])
 board.add_header(BX + 15, BY + BH - 5, pins=7, label="AMP",
                  pad_labels=["Vin", "GND", "SD", "GAIN", "DIN", "BCLK", "LRC"],
-                 pad_nets=[None, "GND", None, None, None, None, None])
+                 pad_nets=["3V3", "GND", None, None, None, None, None])
 
 board.save("loraudio.kicad_pcb")

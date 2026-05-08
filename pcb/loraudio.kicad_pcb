@@ -26,6 +26,7 @@
   (net 1 "VBAT")
   (net 2 "GND")
   (net 3 "VSW")
+  (net 4 "3V3")
   (net_class "Default" ""
     (clearance 0.2)
     (trace_width 0.25)
@@ -218,6 +219,7 @@
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 4 "3V3")
     )
     (pad "GPIO37" thru_hole circle
       (at -13.969999999999999 0)
@@ -450,6 +452,7 @@
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 4 "3V3")
     )
     (pad "AR" thru_hole circle
       (at 2.54 0)
@@ -475,6 +478,7 @@
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 4 "3V3")
     )
     (pad "GND" thru_hole circle
       (at -5.08 0)
