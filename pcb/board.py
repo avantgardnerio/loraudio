@@ -25,15 +25,15 @@ board.add_jst_sh(cx, cy, pins=2, label="PA",
 board.add_jst_ph(cx, cy, pins=2, label="PTT",
                  pad_nets=["PTT", "GND"]); cx += 7
 board.add_jst_ph(cx, cy, pins=2, label="SW",
-                 pad_nets=["VBAT", "VSW"]); cx += 7
+                 pad_nets=["VBAT", "VSW"]); cx += 11
+board.add_jst_ph(cx, cy, pins=4, label="VOL",
+                 pad_labels=["A", "B", "SW", "GND"],
+                 pad_nets=["VOL_A", "VOL_B", "VOL_SW", "GND"]); cx += 12
+board.add_jst_ph(cx, cy, pins=4, label="CHNL",
+                 pad_labels=["A", "B", "SW", "GND"],
+                 pad_nets=["CHNL_A", "CHNL_B", "CHNL_SW", "GND"]); cx += 7
 board.add_jst_ph(cx, cy, pins=2, label="SPK",
-                 pad_labels=["+", "-"], pad_nets=["SPK+", "SPK-"]); cx += 11
-board.add_jst_ph(cx, cy, pins=4, label="ENC1",
-                 pad_labels=["A", "B", "SW", "GND"],
-                 pad_nets=["ENC1_A", "ENC1_B", "ENC1_SW", "GND"]); cx += 12
-board.add_jst_ph(cx, cy, pins=4, label="ENC2",
-                 pad_labels=["A", "B", "SW", "GND"],
-                 pad_nets=["ENC2_A", "ENC2_B", "ENC2_SW", "GND"])
+                 pad_labels=["+", "-"], pad_nets=["SPK+", "SPK-"])
 
 # Heltec V4 headers — two 18-pin rows
 J3_SPAN = 17 * 2.54  # 18 pins, 17 gaps
@@ -45,8 +45,8 @@ board.add_header(BX + INSET + J3_SPAN / 2, HY, pins=18, label="J3",
                              "GPIO42", "GPIO41", "GPIO40", "GPIO39", "GPIO38", "GPIO1",
                              "GPIO2", "GPIO3", "GPIO4", "GPIO5", "GPIO6", "GPIO7"],
                  pad_nets=["GND", "VSW", "3V3", None, None, None,
-                           None, None, None, None, None, "ENC1_A",
-                           "ENC1_B", "BCLK", "LRC", "DIN", "ENC1_SW", "MIC_OUT"])
+                           None, None, None, None, None, "VOL_A",
+                           "VOL_B", "VOL_SW", "MIC_OUT", "CHNL_A", "CHNL_B", "CHNL_SW"])
 
 # Heltec V4 J2 header (right side, pin 18→1 top to bottom)
 J2_SPAN = J3_SPAN  # same 18 pins
@@ -55,8 +55,8 @@ board.add_header(BX + INSET + J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J2
                              "RST", "GPIO0", "GPIO36", "GPIO35", "GPIO34", "GPIO33",
                              "GPIO47", "GPIO48", "GPIO26", "GPIO21", "GPIO20", "GPIO19"],
                  pad_nets=["GND", None, None, None, None, None,
-                           None, "PTT", None, None, None, "ENC2_A",
-                           "ENC2_B", "ENC2_SW", None, None, None, None])
+                           None, "PTT", None, None, None, "BCLK",
+                           "LRC", "DIN", None, None, None, None])
 
 # Board headers along bottom edge
 board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
