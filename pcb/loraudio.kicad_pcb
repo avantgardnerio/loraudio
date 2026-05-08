@@ -30,6 +30,7 @@
   (net 5 "BCLK")
   (net 6 "LRC")
   (net 7 "DIN")
+  (net 8 "MIC_OUT")
   (net_class "Default" ""
     (clearance 0.2)
     (trace_width 0.25)
@@ -316,6 +317,7 @@
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 8 "MIC_OUT")
     )
   )
   (footprint "PinHeader_1x18_P2.54mm"
@@ -445,6 +447,7 @@
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
+      (net 8 "MIC_OUT")
     )
     (pad "GND" thru_hole circle
       (at -2.54 0)
