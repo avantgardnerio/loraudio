@@ -29,12 +29,25 @@ board.add_jst_ph(cx, cy, pins=2, label="PTT",
 board.add_jst_ph(cx, cy, pins=2, label="SW",
                  pad_nets=[None, None])
 
-# Heltec V4 J3 header (left side, pin 18→1 top to bottom)
+# Heltec V4 headers — two 18-pin rows
 J3_SPAN = 17 * 2.54  # 18 pins, 17 gaps
-board.add_header(BX + INSET + J3_SPAN / 2, BY + BH / 2, pins=18, label="J3",
+HELTEC_WIDTH = 22.86  # distance between J3 and J2 header rows
+HY = BY + BH / 2 - HELTEC_WIDTH / 2  # J3 y (top row)
+
+board.add_header(BX + INSET + J3_SPAN / 2, HY, pins=18, label="J3",
                  pad_labels=["GND", "3V3b", "3V3a", "GPIO37", "GPIO46", "GPIO45",
                              "GPIO42", "GPIO41", "GPIO40", "GPIO39", "GPIO38", "GPIO1",
                              "GPIO2", "GPIO3", "GPIO4", "GPIO5", "GPIO6", "GPIO7"],
+                 pad_nets=["GND", None, None, None, None, None,
+                           None, None, None, None, None, None,
+                           None, None, None, None, None, None])
+
+# Heltec V4 J2 header (right side, pin 18→1 top to bottom)
+J2_SPAN = J3_SPAN  # same 18 pins
+board.add_header(BX + INSET + J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J2",
+                 pad_labels=["GND", "5V", "Ve_a", "Ve_b", "GPIO44", "GPIO43",
+                             "RST", "GPIO0", "GPIO36", "GPIO35", "GPIO34", "GPIO33",
+                             "GPIO47", "GPIO48", "GPIO26", "GPIO21", "GPIO20", "GPIO19"],
                  pad_nets=["GND", None, None, None, None, None,
                            None, None, None, None, None, None,
                            None, None, None, None, None, None])
