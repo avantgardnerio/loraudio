@@ -40,7 +40,7 @@ board.add_header(BX + INSET + J3_SPAN / 2, HY, pins=18, label="J3",
                              "GPIO2", "GPIO3", "GPIO4", "GPIO5", "GPIO6", "GPIO7"],
                  pad_nets=["GND", "VSW", "3V3", None, None, None,
                            None, None, None, None, None, None,
-                           None, None, None, None, None, None])
+                           None, "BCLK", "LRC", "DIN", None, None])
 
 # Heltec V4 J2 header (right side, pin 18→1 top to bottom)
 J2_SPAN = J3_SPAN  # same 18 pins
@@ -58,6 +58,6 @@ board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
                  pad_nets=[None, "GND", "3V3", None, None])
 board.add_header(BX + 15, BY + BH - 5, pins=7, label="AMP",
                  pad_labels=["Vin", "GND", "SD", "GAIN", "DIN", "BCLK", "LRC"],
-                 pad_nets=["3V3", "GND", None, None, None, None, None])
+                 pad_nets=["3V3", "GND", None, None, "DIN", "BCLK", "LRC"])
 
 board.save("loraudio.kicad_pcb")
