@@ -112,8 +112,10 @@ class Board:
                             label, angle, pad_labels, pad_nets)
 
     def add_zone(self, net, points, layers=("F.Cu", "B.Cu"), clearance=0.5,
-                 min_thickness=0.25, thermal_gap=0.5, thermal_bridge_width=0.5):
-        """Add a copper zone (e.g. ground plane). Points are (x,y) tuples defining the outline."""
+                 min_thickness=0.25, thermal_gap=0.5, thermal_bridge_width=0.5,
+                 island_removal_mode=2, min_island_area=10):
+        """Add a copper zone (e.g. ground plane). Points are (x,y) tuples defining the outline.
+        island_removal_mode: 0=always remove, 1=never remove, 2=remove below min_island_area (mm²)."""
         n = self._net(net)
         layer_str = " ".join(f'"{l}"' for l in layers)
         pts = " ".join(f"(xy {x} {y})" for x, y in points)
@@ -131,6 +133,8 @@ class Board:
             f'    (fill yes\n'
             f'      (thermal_gap {thermal_gap})\n'
             f'      (thermal_bridge_width {thermal_bridge_width})\n'
+            f'      (island_removal_mode {island_removal_mode})\n'
+            f'      (island_area_min {min_island_area})\n'
             f'    )\n'
             f'    (polygon\n'
             f'      (pts\n'

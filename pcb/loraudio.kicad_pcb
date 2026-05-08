@@ -565,13 +565,15 @@
     (layers "F.Cu" "B.Cu")
     (hatch edge 0.5)
     (connect_pads
-      (clearance 0.5)
+      (clearance 0.25)
     )
     (min_thickness 0.25)
     (filled_areas_thickness no)
     (fill yes
       (thermal_gap 0.5)
       (thermal_bridge_width 0.5)
+      (island_removal_mode 2)
+      (island_area_min 10)
     )
     (polygon
       (pts

@@ -67,6 +67,6 @@ board.add_header(AMP_X, AMP_Y - 12.954, pins=2, label="AMP_SPK", angle=180,
 # Ground plane — GND zone covering full board, both copper layers
 board.add_zone("GND", [
     (BX, BY), (BX + BW, BY), (BX + BW, BY + BH), (BX, BY + BH),
-])
+], clearance=0.25)
 
 board.save("loraudio.kicad_pcb")
