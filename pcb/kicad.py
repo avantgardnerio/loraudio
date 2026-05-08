@@ -10,6 +10,8 @@ class Board:
             (31, "B.Cu", "signal", None),
             (36, "B.SilkS", "user", "B.Silkscreen"),
             (37, "F.SilkS", "user", "F.Silkscreen"),
+            (38, "B.Mask", "user", "B.Mask"),
+            (39, "F.Mask", "user", "F.Mask"),
             (44, "Edge.Cuts", "user", None),
         ]
         self.graphics = []
@@ -145,8 +147,17 @@ class Board:
             f"  )\n"
             f"  (setup\n"
             f"    (pad_to_mask_clearance 0)\n"
+            f"    (pcbplotparams\n"
+            f"      (layerselection 0x00010fc_ffffffff)\n"
+            f"    )\n"
             f"  )\n"
-            f"{self._render_nets()}"
+            f"{self._render_nets()}\n"
+            f'  (net_class "Default" ""\n'
+            f"    (clearance 0.2)\n"
+            f"    (trace_width 0.25)\n"
+            f"    (via_dia 0.6)\n"
+            f"    (via_drill 0.3)\n"
+            f"  )"
             f"{gfx}\n"
             f")\n"
         )
