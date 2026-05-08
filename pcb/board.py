@@ -16,7 +16,12 @@ for x in (BX + INSET, BX + BW - INSET):
     for y in (BY + INSET, BY + BH - INSET):
         board.add_mounting_hole(x, y)
 
-# Speaker connector (JST-PH 2-pin SMD)
-board.add_jst_ph(BX + 35, BY + 5, pins=2, label="SPK", pad_labels=["+", "-"])
+# Connectors along top edge
+cx, cy, step = BX + 14, BY + 5, 8
+board.add_jst_ph(cx, cy, pins=2, label="SPK", pad_labels=["+", "-"]); cx += step
+board.add_jst_ph(cx, cy, pins=2, label="BAT", pad_labels=["+", "-"]); cx += step
+board.add_jst_sh(cx, cy, pins=2, label="PA", pad_labels=["+", "-"]); cx += step
+board.add_jst_ph(cx, cy, pins=2, label="PTT"); cx += step
+board.add_jst_ph(cx, cy, pins=2, label="PWR")
 
 board.save("loraudio.kicad_pcb")
