@@ -13,12 +13,35 @@ class Board:
             (44, "Edge.Cuts", "user", None),
         ]
         self.graphics = []
+        self.footprints = []
+        self._fp_id = 0
 
     def add_rect(self, x, y, w, h, layer="Edge.Cuts", width=0.1):
         self.graphics.append(
             f'  (gr_rect (start {x} {y}) (end {x+w} {y+h})'
             f' (stroke (width {width}) (type solid)) (fill none)'
             f' (layer "{layer}"))'
+        )
+
+    def add_mounting_hole(self, x, y, drill=3.2):
+        """Add a non-plated through-hole at (x, y) with given drill diameter in mm."""
+        self._fp_id += 1
+        pad_size = drill + 0.5
+        self.footprints.append(
+            f'  (footprint "MountingHole_{drill}mm"\n'
+            f'    (layer "F.Cu")\n'
+            f"    (at {x} {y})\n"
+            f'    (attr exclude_from_pos_files exclude_from_bom)\n'
+            f'    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide\n'
+            f"      (effects (font (size 1 1) (thickness 0.15)))\n"
+            f"    )\n"
+            f'    (pad "" np_thru_hole circle\n'
+            f"      (at 0 0)\n"
+            f"      (size {pad_size} {pad_size})\n"
+            f"      (drill {drill})\n"
+            f"      (layers *.Cu *.Mask)\n"
+            f"    )\n"
+            f"  )"
         )
 
     def _render_layers(self):
@@ -31,7 +54,12 @@ class Board:
         return "\n".join(lines)
 
     def render(self):
-        gfx = "\n\n" + "\n".join(self.graphics) if self.graphics else ""
+        parts = []
+        if self.graphics:
+            parts.append("\n".join(self.graphics))
+        if self.footprints:
+            parts.append("\n".join(self.footprints))
+        gfx = "\n\n" + "\n\n".join(parts) if parts else ""
         return (
             f"(kicad_pcb\n"
             f'  (version 20240108)\n'

@@ -20,4 +20,61 @@
   (net 0 "")
 
   (gr_rect (start 113 113) (end 183 163) (stroke (width 0.1) (type solid)) (fill none) (layer "Edge.Cuts"))
+
+  (footprint "MountingHole_3.2mm"
+    (layer "F.Cu")
+    (at 116 116)
+    (attr exclude_from_pos_files exclude_from_bom)
+    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide
+      (effects (font (size 1 1) (thickness 0.15)))
+    )
+    (pad "" np_thru_hole circle
+      (at 0 0)
+      (size 3.7 3.7)
+      (drill 3.2)
+      (layers *.Cu *.Mask)
+    )
+  )
+  (footprint "MountingHole_3.2mm"
+    (layer "F.Cu")
+    (at 116 160)
+    (attr exclude_from_pos_files exclude_from_bom)
+    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide
+      (effects (font (size 1 1) (thickness 0.15)))
+    )
+    (pad "" np_thru_hole circle
+      (at 0 0)
+      (size 3.7 3.7)
+      (drill 3.2)
+      (layers *.Cu *.Mask)
+    )
+  )
+  (footprint "MountingHole_3.2mm"
+    (layer "F.Cu")
+    (at 180 116)
+    (attr exclude_from_pos_files exclude_from_bom)
+    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide
+      (effects (font (size 1 1) (thickness 0.15)))
+    )
+    (pad "" np_thru_hole circle
+      (at 0 0)
+      (size 3.7 3.7)
+      (drill 3.2)
+      (layers *.Cu *.Mask)
+    )
+  )
+  (footprint "MountingHole_3.2mm"
+    (layer "F.Cu")
+    (at 180 160)
+    (attr exclude_from_pos_files exclude_from_bom)
+    (fp_text reference "" (at 0 0) (layer "F.SilkS") hide
+      (effects (font (size 1 1) (thickness 0.15)))
+    )
+    (pad "" np_thru_hole circle
+      (at 0 0)
+      (size 3.7 3.7)
+      (drill 3.2)
+      (layers *.Cu *.Mask)
+    )
+  )
 )
