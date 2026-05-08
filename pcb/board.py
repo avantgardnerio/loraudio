@@ -14,7 +14,7 @@ board.add_rect(BX, BY, BW, BH)
 
 for x in (BX + INSET, BX + BW - INSET):
     for y in (BY + INSET, BY + BH - INSET):
-        board.add_mounting_hole(x, y)
+        board.add_mounting_hole(x, y, drill=2.2)
 
 # Connectors along top edge
 cx, cy = BX + 8, BY + 5

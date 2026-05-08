@@ -49,7 +49,7 @@
 
   (gr_rect (start 113 113) (end 183 163) (stroke (width 0.1) (type solid)) (fill none) (layer "Edge.Cuts"))
 
-  (footprint "MountingHole_3.2mm"
+  (footprint "MountingHole_2.2mm"
     (layer "F.Cu")
     (at 116 116)
     (attr exclude_from_pos_files exclude_from_bom)
@@ -58,12 +58,12 @@
     )
     (pad "" np_thru_hole circle
       (at 0 0)
-      (size 3.7 3.7)
-      (drill 3.2)
+      (size 2.7 2.7)
+      (drill 2.2)
       (layers *.Cu *.Mask)
     )
   )
-  (footprint "MountingHole_3.2mm"
+  (footprint "MountingHole_2.2mm"
     (layer "F.Cu")
     (at 116 160)
     (attr exclude_from_pos_files exclude_from_bom)
@@ -72,12 +72,12 @@
     )
     (pad "" np_thru_hole circle
       (at 0 0)
-      (size 3.7 3.7)
-      (drill 3.2)
+      (size 2.7 2.7)
+      (drill 2.2)
       (layers *.Cu *.Mask)
     )
   )
-  (footprint "MountingHole_3.2mm"
+  (footprint "MountingHole_2.2mm"
     (layer "F.Cu")
     (at 180 116)
     (attr exclude_from_pos_files exclude_from_bom)
@@ -86,12 +86,12 @@
     )
     (pad "" np_thru_hole circle
       (at 0 0)
-      (size 3.7 3.7)
-      (drill 3.2)
+      (size 2.7 2.7)
+      (drill 2.2)
       (layers *.Cu *.Mask)
     )
   )
-  (footprint "MountingHole_3.2mm"
+  (footprint "MountingHole_2.2mm"
     (layer "F.Cu")
     (at 180 160)
     (attr exclude_from_pos_files exclude_from_bom)
@@ -100,8 +100,8 @@
     )
     (pad "" np_thru_hole circle
       (at 0 0)
-      (size 3.7 3.7)
-      (drill 3.2)
+      (size 2.7 2.7)
+      (drill 2.2)
       (layers *.Cu *.Mask)
     )
   )
