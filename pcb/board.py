@@ -21,13 +21,13 @@ cx, cy, step = BX + 14, BY + 5, 8
 board.add_jst_ph(cx, cy, pins=2, label="SPK",
                  pad_labels=["+", "-"], pad_nets=[None, None]); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="BAT",
-                 pad_labels=["+", "-"], pad_nets=[None, "GND"]); cx += step
+                 pad_labels=["+", "-"], pad_nets=["VBAT", "GND"]); cx += step
 board.add_jst_sh(cx, cy, pins=2, label="PA",
-                 pad_labels=["+", "-"], pad_nets=[None, "GND"]); cx += step
+                 pad_labels=["+", "-"], pad_nets=["VSW", "GND"]); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="PTT",
                  pad_nets=[None, "GND"]); cx += step
 board.add_jst_ph(cx, cy, pins=2, label="SW",
-                 pad_nets=[None, None])
+                 pad_nets=["VBAT", "VSW"])
 
 # Heltec V4 headers — two 18-pin rows
 J3_SPAN = 17 * 2.54  # 18 pins, 17 gaps
@@ -38,7 +38,7 @@ board.add_header(BX + INSET + J3_SPAN / 2, HY, pins=18, label="J3",
                  pad_labels=["GND", "3V3b", "3V3a", "GPIO37", "GPIO46", "GPIO45",
                              "GPIO42", "GPIO41", "GPIO40", "GPIO39", "GPIO38", "GPIO1",
                              "GPIO2", "GPIO3", "GPIO4", "GPIO5", "GPIO6", "GPIO7"],
-                 pad_nets=["GND", None, None, None, None, None,
+                 pad_nets=["GND", "VSW", None, None, None, None,
                            None, None, None, None, None, None,
                            None, None, None, None, None, None])
 
