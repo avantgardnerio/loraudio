@@ -48,7 +48,7 @@
   )
 
   (gr_rect (start 113 113) (end 183 163) (stroke (width 0.1) (type solid)) (fill none) (layer "Edge.Cuts"))
-  (gr_text "open-oswst  796951d"
+  (gr_text "open-oswst  1732d62"
     (at 148.0 161)
     (layer "F.SilkS")
     (effects (font (size 0.8 0.8) (thickness 0.12)))
@@ -536,34 +536,34 @@
     (fp_text reference "MIC" (at 0 -2.5) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
     )
-    (pad "OUT" thru_hole circle
-      (at -5.08 0)
-      (size 1.7 1.7)
-      (drill 1.0)
-      (layers *.Cu *.Mask)
-      (net 14 "MIC_OUT")
-    )
     (pad "GND" thru_hole circle
-      (at -2.54 0)
+      (at -5.08 0)
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
       (net 2 "GND")
     )
     (pad "VDD" thru_hole circle
-      (at 0.0 0)
+      (at -2.54 0)
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
       (net 13 "3V3")
     )
-    (pad "AR" thru_hole circle
-      (at 2.54 0)
+    (pad "GAIN" thru_hole circle
+      (at 0.0 0)
       (size 1.7 1.7)
       (drill 1.0)
       (layers *.Cu *.Mask)
     )
-    (pad "GAIN" thru_hole circle
+    (pad "OUT" thru_hole circle
+      (at 2.54 0)
+      (size 1.7 1.7)
+      (drill 1.0)
+      (layers *.Cu *.Mask)
+      (net 14 "MIC_OUT")
+    )
+    (pad "AR" thru_hole circle
       (at 5.08 0)
       (size 1.7 1.7)
       (drill 1.0)
@@ -657,8 +657,8 @@
     (min_thickness 0.25)
     (filled_areas_thickness no)
     (fill yes
-      (thermal_gap 0.5)
-      (thermal_bridge_width 0.5)
+      (thermal_gap 0.3)
+      (thermal_bridge_width 0.3)
       (island_removal_mode 2)
       (island_area_min 10)
     )

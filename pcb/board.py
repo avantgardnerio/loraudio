@@ -62,8 +62,8 @@ board.add_header(BX + INSET + J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J2
 
 # Board headers along bottom edge
 board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
-                 pad_labels=["OUT", "GND", "VDD", "AR", "GAIN"],
-                 pad_nets=["MIC_OUT", "GND", "3V3", None, None])
+                 pad_labels=["GND", "VDD", "GAIN", "OUT", "AR"],
+                 pad_nets=["GND", "3V3", None, "MIC_OUT", None])
 AMP_X = BX + BW - INSET - 3 * 2.54
 AMP_Y = BY + BH - INSET - 5
 board.add_header(AMP_X, AMP_Y, pins=7, label="AMP", angle=180,
@@ -78,6 +78,6 @@ board.add_text(BX + BW / 2, BY + BH - 2, f"open-oswst  {git_sha}", size=0.8, thi
 # Ground plane — GND zone covering full board, both copper layers
 board.add_zone("GND", [
     (BX, BY), (BX + BW, BY), (BX + BW, BY + BH), (BX, BY + BH),
-], clearance=0.25)
+], clearance=0.25, thermal_gap=0.3, thermal_bridge_width=0.3)
 
 board.save("open-oswst.kicad_pcb")
