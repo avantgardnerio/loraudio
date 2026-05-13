@@ -48,7 +48,7 @@
   )
 
   (gr_rect (start 113 113) (end 183 163) (stroke (width 0.1) (type solid)) (fill none) (layer "Edge.Cuts"))
-  (gr_text "open-oswst  1732d62"
+  (gr_text "open-oswst  cabc854"
     (at 148.0 161)
     (layer "F.SilkS")
     (effects (font (size 0.8 0.8) (thickness 0.12)))
@@ -110,23 +110,23 @@
       (layers *.Cu *.Mask)
     )
   )
-  (footprint "JST_SH_B2B"
+  (footprint "JST_PH_B2B"
     (layer "F.Cu")
     (at 121 118)
     (fp_text reference "BAT" (at 0 -2.5) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
     )
     (pad "+" thru_hole circle
-      (at -0.625 0)
-      (size 1.0 1.0)
-      (drill 0.65)
+      (at -1.0 0)
+      (size 1.5 1.5)
+      (drill 0.8)
       (layers *.Cu *.Mask)
       (net 1 "VBAT")
     )
     (pad "-" thru_hole circle
-      (at 0.625 0)
-      (size 1.0 1.0)
-      (drill 0.65)
+      (at 1.0 0)
+      (size 1.5 1.5)
+      (drill 0.8)
       (layers *.Cu *.Mask)
       (net 2 "GND")
     )

@@ -20,7 +20,7 @@ for x in (BX + INSET, BX + BW - INSET):
 
 # Connectors along top edge
 cx, cy = BX + 8, BY + 5
-board.add_jst_sh(cx, cy, pins=2, label="BAT",
+board.add_jst_ph(cx, cy, pins=2, label="BAT",
                  pad_labels=["+", "-"], pad_nets=["VBAT", "GND"]); cx += 7
 board.add_jst_ph(cx, cy, pins=2, label="SW",
                  pad_nets=["VBAT", "VSW"]); cx += 7
