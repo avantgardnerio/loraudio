@@ -48,7 +48,7 @@
   )
 
   (gr_rect (start 113 113) (end 183 163) (stroke (width 0.1) (type solid)) (fill none) (layer "Edge.Cuts"))
-  (gr_text "open-oswst  cabc854"
+  (gr_text "open-oswst  5c44884"
     (at 148.0 161)
     (layer "F.SilkS")
     (effects (font (size 0.8 0.8) (thickness 0.12)))
@@ -264,23 +264,23 @@
       (net 2 "GND")
     )
   )
-  (footprint "JST_ZH_B2B"
+  (footprint "JST_PH_B2B"
     (layer "F.Cu")
-    (at 172 118)
+    (at 175 118)
     (fp_text reference "SPK" (at 0 -2.5) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
     )
     (pad "-" thru_hole circle
-      (at -0.75 0)
-      (size 1.1 1.1)
-      (drill 0.7)
+      (at -1.0 0)
+      (size 1.5 1.5)
+      (drill 0.8)
       (layers *.Cu *.Mask)
       (net 11 "SPK-")
     )
     (pad "+" thru_hole circle
-      (at 0.75 0)
-      (size 1.1 1.1)
-      (drill 0.7)
+      (at 1.0 0)
+      (size 1.5 1.5)
+      (drill 0.8)
       (layers *.Cu *.Mask)
       (net 12 "SPK+")
     )

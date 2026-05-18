@@ -33,8 +33,8 @@ board.add_jst_ph(cx, cy, pins=4, label="VOL",
                  pad_nets=["VOL_A", "VOL_B", "VOL_SW", "GND"]); cx += 12
 board.add_jst_ph(cx, cy, pins=4, label="CHNL",
                  pad_labels=["A", "B", "SW", "GND"],
-                 pad_nets=["CHNL_A", "CHNL_B", "CHNL_SW", "GND"]); cx += 7
-board.add_jst_zh(cx, cy, pins=2, label="SPK",
+                 pad_nets=["CHNL_A", "CHNL_B", "CHNL_SW", "GND"]); cx += 10
+board.add_jst_ph(cx, cy, pins=2, label="SPK",
                  pad_labels=["-", "+"], pad_nets=["SPK-", "SPK+"])
 
 # Heltec V4 headers — two 18-pin rows
