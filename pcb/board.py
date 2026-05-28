@@ -36,8 +36,8 @@ board.add_jst_ph(cx, cy, pins=4, label="CHNL",
                  pad_labels=["A", "B", "SW", "GND"],
                  pad_nets=["CHNL_A", "CHNL_B", "CHNL_SW", "GND"])
 
-# SPK connector on right edge (rotated 90°, near AMP)
-board.add_jst_ph(BX + BW - 5, BY + INSET_TB + 7, pins=2, label="SPK", angle=90,
+# SPK connector on left edge (rotated 90°, near AMP_SPK)
+board.add_jst_ph(BX + 5, BY + INSET_TB + 7, pins=2, label="SPK", angle=90,
                  pad_labels=["-", "+"], pad_nets=["SPK-", "SPK+"])
 
 # Heltec V4 headers — two 18-pin rows
@@ -67,7 +67,7 @@ board.add_header(BX + BW - 3 - J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J
 board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
                  pad_labels=["GND", "VDD", "GAIN", "OUT", "AR"],
                  pad_nets=["GND", "3V3", None, "MIC_OUT", None])
-AMP_X = BX + BW - 3 - 3 * 2.54
+AMP_X = BX + 3 + 3 * 2.54
 AMP_Y = BY + BH - 3 - 5
 board.add_header(AMP_X, AMP_Y, pins=7, label="AMP", angle=180,
                  pad_labels=["Vin", "GND", "SD", "GAIN", "DIN", "BCLK", "LRC"],
