@@ -200,6 +200,14 @@ class Board:
             f"    (trace_width 0.25)\n"
             f"    (via_dia 0.6)\n"
             f"    (via_drill 0.3)\n"
+            f"  )\n"
+            f'  (net_class "Power" "Battery rail — 800mA peak during TX"\n'
+            f"    (clearance 0.2)\n"
+            f"    (trace_width 0.5)\n"
+            f"    (via_dia 0.8)\n"
+            f"    (via_drill 0.4)\n"
+            f'    (add_net "VBAT")\n'
+            f'    (add_net "VSW")\n'
             f"  )"
             f"{gfx}\n"
             f")\n"

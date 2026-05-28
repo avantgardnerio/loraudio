@@ -46,9 +46,17 @@
     (via_dia 0.6)
     (via_drill 0.3)
   )
+  (net_class "Power" "Battery rail — 800mA peak during TX"
+    (clearance 0.2)
+    (trace_width 0.5)
+    (via_dia 0.8)
+    (via_drill 0.4)
+    (add_net "VBAT")
+    (add_net "VSW")
+  )
 
   (gr_rect (start 113 113) (end 183 163) (stroke (width 0.1) (type solid)) (fill none) (layer "Edge.Cuts"))
-  (gr_text "open-oswst  c31a1ce"
+  (gr_text "open-oswst  b9fa6db"
     (at 148.0 161)
     (layer "F.SilkS")
     (effects (font (size 0.8 0.8) (thickness 0.12)))
