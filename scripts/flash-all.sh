@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Flash all connected /dev/ttyACM* boards with the built binary + partition table.
+# Flash all connected Espressif boards with the built binary + partition table.
 # Usage: ./flash-all.sh
 
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib-esp.sh"
 
 BIN="target/xtensa-esp32s3-espidf/debug/open-oswst"
 PTABLE="target/xtensa-esp32s3-espidf/debug/partition-table.bin"
@@ -12,9 +15,8 @@ if [[ ! -f "$BIN" || ! -f "$PTABLE" ]]; then
     exit 1
 fi
 
-DEVS=(/dev/ttyACM*)
-if [[ ${#DEVS[@]} -eq 0 || ! -e "${DEVS[0]}" ]]; then
-    echo "No /dev/ttyACM* devices found." >&2
+if ! esp_devices; then
+    echo "No Espressif serial devices found." >&2
     exit 1
 fi
 

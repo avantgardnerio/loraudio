@@ -2,10 +2,11 @@
 # Monitor multiple serial radios in one merged, color-coded log.
 # Usage: ./monitor-all.sh [baud]
 #   Default baud: 115200
-#   Auto-detects /dev/ttyACM* devices present at launch.
+#   Auto-detects Espressif devices present at launch.
 
 BAUD="${1:-115200}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib-esp.sh"
 LOGFILE="$SCRIPT_DIR/../out/monitor.log"
 mkdir -p "$(dirname "$LOGFILE")"
 COLORS=("\e[32m" "\e[33m" "\e[36m" "\e[35m" "\e[34m")  # green yellow cyan magenta blue
@@ -19,9 +20,8 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-DEVS=(/dev/ttyACM*)
-if [[ ${#DEVS[@]} -eq 0 || ! -e "${DEVS[0]}" ]]; then
-    echo "No /dev/ttyACM* devices found." >&2
+if ! esp_devices; then
+    echo "No Espressif serial devices found." >&2
     exit 1
 fi
 
