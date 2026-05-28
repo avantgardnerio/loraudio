@@ -48,7 +48,7 @@
   )
 
   (gr_rect (start 113 113) (end 183 163) (stroke (width 0.1) (type solid)) (fill none) (layer "Edge.Cuts"))
-  (gr_text "open-oswst  77d9f79"
+  (gr_text "open-oswst  c05cde3"
     (at 148.0 161)
     (layer "F.SilkS")
     (effects (font (size 0.8 0.8) (thickness 0.12)))
@@ -287,7 +287,7 @@
   )
   (footprint "PinHeader_1x18_P2.54mm"
     (layer "F.Cu")
-    (at 137.59 126.57)
+    (at 158.41 126.57)
     (fp_text reference "J3" (at 0 -2.5) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
     )
@@ -412,7 +412,7 @@
   )
   (footprint "PinHeader_1x18_P2.54mm"
     (layer "F.Cu")
-    (at 137.59 149.43)
+    (at 158.41 149.43)
     (fp_text reference "J2" (at 0 -2.5) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
     )

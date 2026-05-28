@@ -45,7 +45,7 @@ J3_SPAN = 17 * 2.54  # 18 pins, 17 gaps
 HELTEC_WIDTH = 22.86  # distance between J3 and J2 header rows
 HY = BY + BH / 2 - HELTEC_WIDTH / 2  # J3 y (top row)
 
-board.add_header(BX + 3 + J3_SPAN / 2, HY, pins=18, label="J3",
+board.add_header(BX + BW - 3 - J3_SPAN / 2, HY, pins=18, label="J3",
                  pad_labels=["GPIO7", "GPIO6", "GPIO5", "GPIO4", "GPIO3", "GPIO2",
                              "GPIO1", "GPIO38", "GPIO39", "GPIO40", "GPIO41", "GPIO42",
                              "GPIO45", "GPIO46", "GPIO37", "3V3a", "3V3b", "GND"],
@@ -55,7 +55,7 @@ board.add_header(BX + 3 + J3_SPAN / 2, HY, pins=18, label="J3",
 
 # Heltec V4 J2 header (right side, pin 18→1 top to bottom)
 J2_SPAN = J3_SPAN  # same 18 pins
-board.add_header(BX + 3 + J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J2",
+board.add_header(BX + BW - 3 - J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J2",
                  pad_labels=["GPIO19", "GPIO20", "GPIO21", "GPIO26", "GPIO48", "GPIO47",
                              "GPIO33", "GPIO34", "GPIO35", "GPIO36", "GPIO0", "RST",
                              "GPIO43", "GPIO44", "Ve_b", "Ve_a", "5V", "GND"],
