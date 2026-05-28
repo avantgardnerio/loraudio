@@ -26,18 +26,24 @@ board.add_jst_ph(cx, cy, pins=2, label="BAT",
 board.add_jst_ph(cx, cy, pins=2, label="SW",
                  pad_nets=["VBAT", "VSW"]); cx += 7
 board.add_jst_ph(cx, cy, pins=2, label="PA",
-                 pad_labels=["+", "-"], pad_nets=["VSW", "GND"]); cx += 7
-board.add_jst_ph(cx, cy, pins=2, label="PTT",
-                 pad_nets=["PTT", "GND"]); cx += 10
-board.add_jst_ph(cx, cy, pins=4, label="VOL",
-                 pad_labels=["A", "B", "SW", "GND"],
-                 pad_nets=["VOL_A", "VOL_B", "VOL_SW", "GND"]); cx += 11
+                 pad_labels=["+", "-"], pad_nets=["VSW", "GND"]); cx += 10
 board.add_jst_ph(cx, cy, pins=4, label="CHNL",
                  pad_labels=["A", "B", "SW", "GND"],
-                 pad_nets=["CHNL_A", "CHNL_B", "CHNL_SW", "GND"])
+                 pad_nets=["CHNL_A", "CHNL_B", "CHNL_SW", "GND"]); cx += 11
+board.add_jst_ph(cx, cy, pins=4, label="VOL",
+                 pad_labels=["A", "B", "SW", "GND"],
+                 pad_nets=["VOL_A", "VOL_B", "VOL_SW", "GND"]); cx += 10
+board.add_jst_ph(cx, cy, pins=2, label="PTT",
+                 pad_nets=["PTT", "GND"])
 
-# SPK connector on left edge (rotated 90°, near AMP_SPK)
-board.add_jst_ph(BX + 5, BY + INSET_TB + 7, pins=2, label="SPK", angle=90,
+# HBAT: feeds VSW out to Heltec's onboard SH1.25-2P LiPo input via an M2M pigtail.
+# Heltec's battery input accepts 3.3-4.2V (per datasheet 3.2), so raw LiPo is correct here.
+# Placed above SPK so VSW from BAT/SW (top of board) doesn't cross the SPK+/SPK- traces.
+board.add_jst_ph(BX + 5, BY + INSET_TB + 7, pins=2, label="HBAT", angle=90,
+                 pad_labels=["+", "-"], pad_nets=["VSW", "GND"])
+
+# SPK connector on left edge (rotated 90°, routes down to AMP_SPK)
+board.add_jst_ph(BX + 5, BY + INSET_TB + 14, pins=2, label="SPK", angle=90,
                  pad_labels=["-", "+"], pad_nets=["SPK-", "SPK+"])
 
 # Heltec V4 headers — two 18-pin rows
@@ -49,9 +55,9 @@ board.add_header(BX + BW - 3 - J3_SPAN / 2, HY, pins=18, label="J3",
                  pad_labels=["GPIO7", "GPIO6", "GPIO5", "GPIO4", "GPIO3", "GPIO2",
                              "GPIO1", "GPIO38", "GPIO39", "GPIO40", "GPIO41", "GPIO42",
                              "GPIO45", "GPIO46", "GPIO37", "3V3a", "3V3b", "GND"],
-                 pad_nets=["CHNL_SW", "CHNL_B", "CHNL_A", "MIC_OUT", "VOL_SW", "VOL_B",
-                           "VOL_A", None, None, None, None, None,
-                           None, None, None, "3V3", "VSW", "GND"])
+                 pad_nets=["CHNL_A", "CHNL_B", "CHNL_SW", "MIC_OUT", "VOL_A", "VOL_B",
+                           "VOL_SW", None, None, None, None, None,
+                           None, None, None, None, None, "GND"])
 
 # Heltec V4 J2 header (right side, pin 18→1 top to bottom)
 J2_SPAN = J3_SPAN  # same 18 pins
@@ -59,19 +65,19 @@ board.add_header(BX + BW - 3 - J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J
                  pad_labels=["GPIO19", "GPIO20", "GPIO21", "GPIO26", "GPIO48", "GPIO47",
                              "GPIO33", "GPIO34", "GPIO35", "GPIO36", "GPIO0", "RST",
                              "GPIO43", "GPIO44", "Ve_b", "Ve_a", "5V", "GND"],
-                 pad_nets=[None, None, None, None, "DIN", "LRC",
-                           "BCLK", None, None, None, "PTT", None,
-                           None, None, None, None, None, "GND"])
+                 pad_nets=[None, None, None, None, "LRC", "BCLK",
+                           "DIN", None, None, None, "PTT", None,
+                           None, None, "Ve", "Ve", None, "GND"])
 
 # Board headers along bottom edge
 board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
                  pad_labels=["GND", "VDD", "GAIN", "OUT", "AR"],
-                 pad_nets=["GND", "3V3", None, "MIC_OUT", None])
+                 pad_nets=["GND", "Ve", None, "MIC_OUT", None])
 AMP_X = BX + 3 + 3 * 2.54
 AMP_Y = BY + BH - 3 - 5
 board.add_header(AMP_X, AMP_Y, pins=7, label="AMP", angle=180,
                  pad_labels=["Vin", "GND", "SD", "GAIN", "DIN", "BCLK", "LRC"],
-                 pad_nets=["3V3", "GND", None, None, "DIN", "BCLK", "LRC"])
+                 pad_nets=["Ve", "GND", None, None, "DIN", "BCLK", "LRC"])
 board.add_header(AMP_X, AMP_Y - 12.954, pins=2, label="AMP_SPK", angle=180,
                  pitch=3.5, pad_labels=["+", "-"], pad_nets=["SPK+", "SPK-"])
 
