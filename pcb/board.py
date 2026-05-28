@@ -46,22 +46,22 @@ HELTEC_WIDTH = 22.86  # distance between J3 and J2 header rows
 HY = BY + BH / 2 - HELTEC_WIDTH / 2  # J3 y (top row)
 
 board.add_header(BX + 3 + J3_SPAN / 2, HY, pins=18, label="J3",
-                 pad_labels=["GND", "3V3b", "3V3a", "GPIO37", "GPIO46", "GPIO45",
-                             "GPIO42", "GPIO41", "GPIO40", "GPIO39", "GPIO38", "GPIO1",
-                             "GPIO2", "GPIO3", "GPIO4", "GPIO5", "GPIO6", "GPIO7"],
-                 pad_nets=["GND", "VSW", "3V3", None, None, None,
-                           None, None, None, None, None, "VOL_A",
-                           "VOL_B", "VOL_SW", "MIC_OUT", "CHNL_A", "CHNL_B", "CHNL_SW"])
+                 pad_labels=["GPIO7", "GPIO6", "GPIO5", "GPIO4", "GPIO3", "GPIO2",
+                             "GPIO1", "GPIO38", "GPIO39", "GPIO40", "GPIO41", "GPIO42",
+                             "GPIO45", "GPIO46", "GPIO37", "3V3a", "3V3b", "GND"],
+                 pad_nets=["CHNL_SW", "CHNL_B", "CHNL_A", "MIC_OUT", "VOL_SW", "VOL_B",
+                           "VOL_A", None, None, None, None, None,
+                           None, None, None, "3V3", "VSW", "GND"])
 
 # Heltec V4 J2 header (right side, pin 18→1 top to bottom)
 J2_SPAN = J3_SPAN  # same 18 pins
 board.add_header(BX + 3 + J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J2",
-                 pad_labels=["GND", "5V", "Ve_a", "Ve_b", "GPIO44", "GPIO43",
-                             "RST", "GPIO0", "GPIO36", "GPIO35", "GPIO34", "GPIO33",
-                             "GPIO47", "GPIO48", "GPIO26", "GPIO21", "GPIO20", "GPIO19"],
-                 pad_nets=["GND", None, None, None, None, None,
-                           None, "PTT", None, None, None, "BCLK",
-                           "LRC", "DIN", None, None, None, None])
+                 pad_labels=["GPIO19", "GPIO20", "GPIO21", "GPIO26", "GPIO48", "GPIO47",
+                             "GPIO33", "GPIO34", "GPIO35", "GPIO36", "GPIO0", "RST",
+                             "GPIO43", "GPIO44", "Ve_b", "Ve_a", "5V", "GND"],
+                 pad_nets=[None, None, None, None, "DIN", "LRC",
+                           "BCLK", None, None, None, "PTT", None,
+                           None, None, None, None, None, "GND"])
 
 # Board headers along bottom edge
 board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
