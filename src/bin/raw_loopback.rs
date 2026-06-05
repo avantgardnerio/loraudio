@@ -51,14 +51,14 @@ fn main() {
     // PTT button (GPIO0, active LOW)
     let button = PinDriver::input(p.pins.gpio0, Pull::Up).unwrap();
 
-    // ADC continuous for mic on GPIO7 at 8kHz
+    // ADC continuous for mic on GPIO4 (ADC1_CH3) at 8kHz — rev4 pinout
     let adc_cfg = AdcContConfig::new()
         .sample_freq(Hertz(8000))
         .frame_measurements(320)
         .frames_count(2);
-    let mut adc = AdcContDriver::new(p.adc1, &adc_cfg, Attenuated::db12(p.pins.gpio7)).unwrap();
+    let mut adc = AdcContDriver::new(p.adc1, &adc_cfg, Attenuated::db12(p.pins.gpio4)).unwrap();
 
-    // I2S TX for speaker
+    // I2S TX for speaker — rev4 pinout: BCLK=47, WS=48, DIN=33
     let i2s_cfg = StdConfig::new(
         I2sChannelConfig::new()
             .dma_buffer_count(8)
@@ -71,10 +71,10 @@ fn main() {
     let mut i2s = I2sDriver::<I2sTx>::new_std_tx(
         p.i2s0,
         &i2s_cfg,
-        p.pins.gpio3, // BCLK
-        p.pins.gpio5, // DIN
+        p.pins.gpio47, // BCLK
+        p.pins.gpio33, // DIN
         None::<AnyIOPin>,
-        p.pins.gpio4, // WS
+        p.pins.gpio48, // WS
     )
     .unwrap();
     i2s.tx_enable().unwrap();

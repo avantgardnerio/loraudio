@@ -71,8 +71,8 @@ board.add_header(BX + BW - 3 - J2_SPAN / 2, HY + HELTEC_WIDTH, pins=18, label="J
 
 # Board headers along bottom edge
 board.add_header(BX + BW / 2, BY + BH - 5, pins=5, label="MIC",
-                 pad_labels=["GND", "VDD", "GAIN", "OUT", "AR"],
-                 pad_nets=["GND", "Ve", None, "MIC_OUT", None])
+                 pad_labels=["AR", "OUT", "GAIN", "VDD", "GND"],
+                 pad_nets=[None, "MIC_OUT", None, "Ve", "GND"])
 AMP_X = BX + 3 + 3 * 2.54
 AMP_Y = BY + BH - 3 - 5
 board.add_header(AMP_X, AMP_Y, pins=7, label="AMP", angle=180,

@@ -1,6 +1,5 @@
 //! Speaker test — plays a continuous 440Hz sine wave.
-//! Pinout: PCB v2 headers shipped J2/J3 FLIPPED, so the amp physically lands on
-//! GPIO1/2/3 (not the intended 33/47/48): BCLK=GPIO1, WS/LRCLK=GPIO2, DIN=GPIO3.
+//! Pinout (rev4 board, correct footprints): BCLK=GPIO47, WS/LRCLK=GPIO48, DIN=GPIO33.
 //! The OLED shows a live "writes" counter: if it's ticking up, the program is
 //! alive and pushing audio into I2S, so silence is a hardware (amp/speaker) fault,
 //! not a dead/crashed program.
@@ -95,10 +94,10 @@ fn main() {
     let mut i2s = I2sDriver::<I2sTx>::new_std_tx(
         p.i2s0,
         &i2s_cfg,
-        p.pins.gpio1, // BCLK
-        p.pins.gpio3, // DIN
+        p.pins.gpio47, // BCLK
+        p.pins.gpio33, // DIN
         None::<AnyIOPin>,
-        p.pins.gpio2, // WS (LRCLK)
+        p.pins.gpio48, // WS (LRCLK)
     )
     .unwrap();
     i2s.tx_enable().unwrap();
